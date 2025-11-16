@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto École Ben Cheikh</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    direction: rtl;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #74ABE2, #5563DE);
+    color: #fff;
+  }
+  header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 40px 20px;
+    text-align: center;
+  }
+  header h1 {
+    font-size: 48px;
+    margin: 0 0 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  }
+  header p {
+    font-size: 20px;
+    margin: 0;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+  }
+  nav {
+    margin-top: 50px;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+  }
+  nav a {
+    padding: 15px 30px;
+    background-color: rgba(255,255,255,0.2);
+    color: #fff;
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  }
+  nav a:hover {
+    background-color: rgba(255,255,255,0.4);
+    transform: translateY(-5px);
+  }
+  @media (max-width:600px){
+    header h1 { font-size:32px; }
+    header p { font-size:16px; }
+    nav { flex-direction: column; gap: 20px; }
+    nav a { font-size:16px; padding:12px 25px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>مرحبا بكم في Auto École Ben Cheikh</h1>
+  <p>النظام الجديد لإدارة المترشحين والدروس</p>
+</header>
+
+<nav>
+  <!-- الزرار ديال Admin غادي يفتح صفحة Admin.html مباشرة -->
+  <a href="admin.html">لوحة التحكم Admin</a>
+  <a href="signin.html">تسجيل الدخول للمترشح</a>
+</nav>
+
+</body>
+</html>

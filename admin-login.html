@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>تسجيل الدخول للـ Admin</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        direction: rtl;
+        background: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+    .login-box {
+        background: white;
+        padding: 25px;
+        width: 320px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px #aaa;
+        text-align: center;
+    }
+    input {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+    }
+    button {
+        width: 100%;
+        padding: 10px;
+        background: #004aad;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #0062d1;
+    }
+</style>
+</head>
+<body>
+
+<div class="login-box">
+    <h2>تسجيل الدخول</h2>
+
+    <input type="text" id="adminUser" placeholder="اسم المستخدم (admin)">
+    <input type="password" id="adminPass" placeholder="كلمة المرور (1234)">
+    
+    <button onclick="loginAdmin()">تسجيل الدخول</button>
+</div>
+
+<script>
+function loginAdmin() {
+    const user = document.getElementById("adminUser").value.trim();
+    const pass = document.getElementById("adminPass").value.trim();
+
+    // معلومات الدخول
+    const adminUser = "admin";
+    const adminPass = "1234";
+
+    if(user === adminUser && pass === adminPass){
+        localStorage.setItem("adminLogged", "yes");
+        window.location.href = "admin.html"; // نقل لصفحة admin
+    } else {
+        alert("البيانات غير صحيحة!");
+    }
+}
+</script>
+
+</body>
+</html>

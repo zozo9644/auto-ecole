@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل دخول المترشح - Auto École Ben Cheikh</title>
+<style>
+body { font-family: Arial; direction: rtl; background: linear-gradient(135deg, #74ABE2, #5563DE); color: #fff; margin:0; padding:0; }
+header { text-align:center; padding:40px 20px; }
+header h1 { font-size:36px; margin:0; }
+section { background: rgba(255,255,255,0.1); max-width:500px; margin:auto; padding:30px; border-radius:12px; }
+input, button { padding:12px; font-size:16px; border-radius:6px; border:none; }
+input { border:1px solid #fff; background:rgba(255,255,255,0.2); color:#fff; }
+input::placeholder { color:#eee; }
+button { background:#004aad; color:white; cursor:pointer; transition:0.3s; }
+button:hover { background:#003080; }
+.dashboard { margin-top:20px; background: rgba(255,255,255,0.2); padding:15px; border-radius:8px; }
+ul { padding-left:20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>تسجيل دخول المترشح</h1>
+  <p>أدخل الاسم ورقم الهاتف لمتابعة الدروس والتقدم</p>
+</header>
+
+<section>
+  <h2>تسجيل الدخول</h2>
+  <form id="signinForm">
+    <input type="text" id="name" placeholder="الاسم الكامل" required>
+    <input type="tel" id="phone" placeholder="رقم الهاتف" required>
+    <button type="submit">تسجيل الدخول</button>
+  </form>
+
+  <div class="dashboard" id="dashboard" style="display:none;">
+    <h3>مرحباً، <span id="candidateName"></span></h3>
+    <p>نوع الرخصة: <span id="candidateLicense"></span></p>
+    <h4>الدروس:</h4>
+    <ul id="lessonsList"></ul>
+    <h4>التقدم:</h4>
+    <ul id="progressList"></ul>
+  </div>
+</section>
+
+<script>
+let currentCandidate = null;
+
+function updateCandidateDashboard() {
+  if(!currentCandidate) return;
+  const candidatesLatest = JSON.parse(localStorage.getItem('candidates')) || [];
+  const candidate = candidatesLatest.find(c => c.id === currentCandidate.id);
+  if(!candidate) return;
+
+  const oldLessonsCount = currentCandidate.lessons ? currentCandidate.lessons.length : 0;
+  const oldProgressCount = currentCandidate.progress ? currentCandidate.progress.length : 0;
+
+  currentCandidate = candidate;
+
+  document.getElementById('candidateName').textContent = candidate.name;
+  document.getElementById('candidateLicense').textContent = candidate.license;
+
+  const sortedLessons = [...candidate.lessons].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const sortedProgress = [...candidate.progress].sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  document.getElementById('lessonsList').innerHTML = sortedLessons.length ? sortedLessons.map(l=>`<li>${l.title} - ${l.note} (${l.date})</li>`).join('') : "<li>لا يوجد دروس مسجلة بعد</li>";
+  document.getElementById('progressList').innerHTML = sortedProgress.length ? sortedProgress.map(p=>`<li>${p.value}% - ${p.note} (${p.date})</li>`).join('') : "<li>لا يوجد تقدم مسجل بعد</li>";
+
+  if(candidate.lessons.length > oldLessonsCount){
+    alert(`تم إضافة درس جديد!`);
+  }
+  if(candidate.progress.length > oldProgressCount){
+    alert(`تم تحديث التقدم!`);
+  }
+}
+
+document.getElementById('signinForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const candidatesLatest = JSON.parse(localStorage.getItem('candidates')) || [];
+  const candidate = candidatesLatest.find(c => c.name === name && c.phone === phone);
+
+  if(!candidate){
+    alert("المترشح غير موجود! تأكد من الاسم ورقم الهاتف.");
+    return;
+  }
+
+  currentCandidate = candidate;
+  document.getElementById('signinForm').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  updateCandidateDashboard();
+});
+
+window.addEventListener('storage', function(e){
+  if(e.key === 'candidates' && currentCandidate){
+    updateCandidateDashboard();
+  }
+});
+</script>
+
+</body>
+</html>

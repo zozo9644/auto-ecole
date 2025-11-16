@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة التحكم Admin - Auto École Ben Cheikh</title>
+<style>
+body { font-family: Arial; direction: rtl; background: #f0f2f5; color: #333; margin:0; padding:0; }
+header { background:#004aad; color:white; padding:30px 20px; text-align:center; }
+header h1 { margin:0; font-size:36px; }
+nav { text-align:center; margin:20px 0; }
+nav a { margin:0 10px; text-decoration:none; color:#004aad; font-weight:bold; padding:10px 20px; border:2px solid #004aad; border-radius:8px; transition:0.3s; }
+nav a:hover { background:#004aad; color:white; }
+section { padding:20px; max-width:800px; margin:auto; background:white; border-radius:10px; box-shadow:0 6px 10px rgba(0,0,0,0.1); }
+h2 { text-align:center; color:#004aad; }
+form, .edit-form { display:flex; flex-direction:column; gap:12px; margin-top:20px; }
+input, select, button { padding:10px; font-size:16px; border-radius:6px; border:1px solid #ccc; }
+button { background:#004aad; color:white; border:none; cursor:pointer; transition:0.3s; }
+button:hover { background:#003080; }
+table { width:100%; border-collapse: collapse; margin-top:15px; }
+th, td { border:1px solid #ccc; padding:10px; text-align:center; }
+.edit-form { display:none; margin-top:20px; background:#eef1f5; padding:15px; border-radius:8px; }
+label { font-weight:bold; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>لوحة التحكم Admin</h1>
+  <p>إدارة المترشحين والدروس</p>
+</header>
+
+<nav><a href="index.html">الصفحة الرئيسية</a></nav>
+
+<section>
+  <h2>إضافة مترشح جديد</h2>
+  <form id="candidateForm">
+    <input type="text" id="name" placeholder="الاسم الكامل" required>
+    <input type="number" id="age" placeholder="العمر" required>
+    <input type="tel" id="phone" placeholder="رقم الهاتف" required>
+    <select id="license" required>
+      <option value="">اختر نوع الرخصة</option>
+      <option value="B">B</option>
+      <option value="A">A</option>
+    </select>
+    <button type="submit">أضف المترشح</button>
+  </form>
+
+  <div class="dashboard" id="candidatesList">
+    <p>لا يوجد مترشحين بعد.</p>
+  </div>
+
+  <div class="edit-form" id="editForm">
+    <h3>إضافة / تعديل درس وتقدم</h3>
+
+    <label for="lessonDate">التاريخ:</label>
+    <input type="date" id="lessonDate">
+
+    <label for="lessonTitle">عنوان الدرس:</label>
+    <input type="text" id="lessonTitle" placeholder="اكتب عنوان الدرس هنا">
+
+    <label for="lessonNote">ملاحظة عن الدرس:</label>
+    <input type="text" id="lessonNote" placeholder="يمكنك إضافة ملاحظة">
+
+    <label for="progressValue">التقدم (%):</label>
+    <input type="number" id="progressValue" placeholder="مثال: 50" min="0" max="100">
+
+    <label for="progressNote">ملاحظة عن التقدم:</label>
+    <input type="text" id="progressNote" placeholder="يمكنك إضافة ملاحظة">
+
+    <button id="addLessonProgress">إضافة / تحديث</button>
+    <button id="cancelEdit" style="background-color:#ccc; color:#333;">إلغاء</button>
+  </div>
+</section>
+
+<script>
+let candidates = JSON.parse(localStorage.getItem('candidates')) || [];
+let currentEditId = null;
+
+// حفظ البيانات
+function saveCandidates() {
+  localStorage.setItem('candidates', JSON.stringify(candidates));
+  updateDashboard();
+}
+
+// إضافة مترشح
+document.getElementById('candidateForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const license = document.getElementById('license').value;
+
+  if(candidates.some(c => c.name === name && c.phone === phone)){
+    alert("هذا المترشح مسجل بالفعل!");
+    return;
+  }
+
+  const candidate = {
+    id: Date.now(),
+    name: name,
+    age: document.getElementById('age').value,
+    phone: phone,
+    license: license,
+    lessons: [],
+    progress: []
+  };
+  candidates.push(candidate);
+  saveCandidates();
+  document.getElementById('candidateForm').reset();
+});
+
+// فتح خانة التعديل
+function editCandidate(id){
+  currentEditId = id;
+  const candidate = candidates.find(c => c.id === id);
+  document.getElementById('lessonDate').value = '';
+  document.getElementById('lessonTitle').value = '';
+  document.getElementById('lessonNote').value = '';
+  document.getElementById('progressValue').value = '';
+  document.getElementById('progressNote').value = '';
+  document.getElementById('editForm').style.display = 'block';
+}
+
+// إضافة الدروس والتقدم
+document.getElementById('addLessonProgress').addEventListener('click', function(){
+  const candidate = candidates.find(c => c.id === currentEditId);
+  if(!candidate) return alert("لم يتم اختيار مترشح");
+
+  const lessonDate = document.getElementById('lessonDate').value;
+  const lessonTitle = document.getElementById('lessonTitle').value.trim();
+  const lessonNote = document.getElementById('lessonNote').value.trim();
+  if(lessonTitle){
+    candidate.lessons.push({ title: lessonTitle, note: lessonNote, date: lessonDate || new Date().toISOString().slice(0,10) });
+  }
+
+  const progressValue = document.getElementById('progressValue').value;
+  const progressNote = document.getElementById('progressNote').value.trim();
+  if(progressValue){
+    candidate.progress.push({ value: progressValue, note: progressNote, date: lessonDate || new Date().toISOString().slice(0,10) });
+  }
+
+  saveCandidates();
+  alert("تم إضافة الدرس و/أو التقدم بنجاح!");
+
+  // مسح الحقول
+  document.getElementById('lessonDate').value = '';
+  document.getElementById('lessonTitle').value = '';
+  document.getElementById('lessonNote').value = '';
+  document.getElementById('progressValue').value = '';
+  document.getElementById('progressNote').value = '';
+});
+
+document.getElementById('cancelEdit').addEventListener('click', function(){
+  document.getElementById('editForm').style.display = 'none';
+});
+
+// تحديث لوحة المترشحين
+function updateDashboard() {
+  const candidatesList = document.getElementById('candidatesList');
+  if(candidates.length === 0){
+    candidatesList.innerHTML = "<p>لا يوجد مترشحين بعد.</p>";
+    return;
+  }
+  let html = "<table><tr><th>الرقم</th><th>الاسم</th><th>العمر</th><th>الهاتف</th><th>الرخصة</th><th>تعديل</th></tr>";
+  candidates.forEach((c,index)=>{
+    html += `<tr>
+      <td>${index+1}</td>
+      <td>${c.name}</td>
+      <td>${c.age}</td>
+      <td>${c.phone}</td>
+      <td>${c.license}</td>
+      <td><button onclick="editCandidate(${c.id})">Edit</button></td>
+    </tr>`;
+  });
+  html += "</table>";
+  candidatesList.innerHTML = html;
+}
+
+updateDashboard();
+</script>
+<script>
+// منع الدخول إذا لم يكن admin مسجل الدخول
+if(localStorage.getItem("adminLogged") !== "yes"){
+    window.location.href = "admin-login.html";
+}
+</script>
+<button onclick="logout()" style="background:#c00; color:white; padding:8px; border:none; border-radius:6px; cursor:pointer;">
+خروج
+</button>
+
+<script>
+function logout(){
+    localStorage.removeItem("adminLogged");
+    window.location.href = "admin-login.html";
+}
+</script>
+
+</body>
+</html>
