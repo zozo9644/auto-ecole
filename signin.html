@@ -44,43 +44,36 @@ ul { padding-left:20px; }
 </section>
 
 <script>
+const API_URL = "https://sheetdb.io/api/v1/o1glqkhxgb58a";
 let currentCandidate = null;
 
-function updateCandidateDashboard() {
-  if(!currentCandidate) return;
-  const candidatesLatest = JSON.parse(localStorage.getItem('candidates')) || [];
-  const candidate = candidatesLatest.find(c => c.id === currentCandidate.id);
-  if(!candidate) return;
-
-  const oldLessonsCount = currentCandidate.lessons ? currentCandidate.lessons.length : 0;
-  const oldProgressCount = currentCandidate.progress ? currentCandidate.progress.length : 0;
-
-  currentCandidate = candidate;
-
+// تحديث لوحة المترشح
+function updateCandidateDashboard(candidate){
   document.getElementById('candidateName').textContent = candidate.name;
   document.getElementById('candidateLicense').textContent = candidate.license;
 
-  const sortedLessons = [...candidate.lessons].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const sortedProgress = [...candidate.progress].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const lessons = candidate.lessons ? JSON.parse(candidate.lessons) : [];
+  const progress = candidate.progress ? JSON.parse(candidate.progress) : [];
 
-  document.getElementById('lessonsList').innerHTML = sortedLessons.length ? sortedLessons.map(l=>`<li>${l.title} - ${l.note} (${l.date})</li>`).join('') : "<li>لا يوجد دروس مسجلة بعد</li>";
-  document.getElementById('progressList').innerHTML = sortedProgress.length ? sortedProgress.map(p=>`<li>${p.value}% - ${p.note} (${p.date})</li>`).join('') : "<li>لا يوجد تقدم مسجل بعد</li>";
+  document.getElementById('lessonsList').innerHTML = lessons.length 
+    ? lessons.map(l=>`<li>${l.title} - ${l.note} (${l.date})</li>`).join('')
+    : "<li>لا يوجد دروس مسجلة بعد</li>";
 
-  if(candidate.lessons.length > oldLessonsCount){
-    alert(`تم إضافة درس جديد!`);
-  }
-  if(candidate.progress.length > oldProgressCount){
-    alert(`تم تحديث التقدم!`);
-  }
+  document.getElementById('progressList').innerHTML = progress.length
+    ? progress.map(p=>`<li>${p.value}% - ${p.note} (${p.date})</li>`).join('')
+    : "<li>لا يوجد تقدم مسجل بعد</li>";
 }
 
-document.getElementById('signinForm').addEventListener('submit', function(e){
+// تسجيل دخول
+document.getElementById('signinForm').addEventListener('submit', async function(e){
   e.preventDefault();
   const name = document.getElementById('name').value.trim();
   const phone = document.getElementById('phone').value.trim();
-  const candidatesLatest = JSON.parse(localStorage.getItem('candidates')) || [];
-  const candidate = candidatesLatest.find(c => c.name === name && c.phone === phone);
 
+  const res = await fetch(API_URL);
+  const candidates = await res.json();
+
+  const candidate = candidates.find(c => c.name === name && c.phone === phone);
   if(!candidate){
     alert("المترشح غير موجود! تأكد من الاسم ورقم الهاتف.");
     return;
@@ -89,13 +82,7 @@ document.getElementById('signinForm').addEventListener('submit', function(e){
   currentCandidate = candidate;
   document.getElementById('signinForm').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
-  updateCandidateDashboard();
-});
-
-window.addEventListener('storage', function(e){
-  if(e.key === 'candidates' && currentCandidate){
-    updateCandidateDashboard();
-  }
+  updateCandidateDashboard(candidate);
 });
 </script>
 
