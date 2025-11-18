@@ -11,7 +11,7 @@ header h1 { margin:0; font-size:36px; }
 nav { text-align:center; margin:20px 0; }
 nav a { margin:0 10px; text-decoration:none; color:#004aad; font-weight:bold; padding:10px 20px; border:2px solid #004aad; border-radius:8px; transition:0.3s; }
 nav a:hover { background:#004aad; color:white; }
-section { padding:20px; max-width:800px; margin:auto; background:white; border-radius:10px; box-shadow:0 6px 10px rgba(0,0,0,0.1); }
+section { padding:20px; max-width:900px; margin:auto; background:white; border-radius:10px; box-shadow:0 6px 10px rgba(0,0,0,0.1); }
 h2 { text-align:center; color:#004aad; }
 form, .edit-form { display:flex; flex-direction:column; gap:12px; margin-top:20px; }
 input, select, button { padding:10px; font-size:16px; border-radius:6px; border:1px solid #ccc; }
@@ -47,7 +47,7 @@ label { font-weight:bold; }
   </form>
 
   <div class="dashboard" id="candidatesList">
-    <p>لا يوجد مترشحين بعد.</p>
+    <p>جارٍ تحميل البيانات...</p>
   </div>
 
   <div class="edit-form" id="editForm">
@@ -74,94 +74,25 @@ label { font-weight:bold; }
 </section>
 
 <script>
-let candidates = JSON.parse(localStorage.getItem('candidates')) || [];
+const API_URL = "https://sheetdb.io/api/v1/o1glqkhxgb58a";
+let candidates = [];
 let currentEditId = null;
 
-// حفظ البيانات
-function saveCandidates() {
-  localStorage.setItem('candidates', JSON.stringify(candidates));
+// جلب جميع المترشحين
+async function fetchCandidates(){
+  const res = await fetch(API_URL);
+  candidates = await res.json();
   updateDashboard();
 }
 
-// إضافة مترشح
-document.getElementById('candidateForm').addEventListener('submit', function(e){
-  e.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  const phone = document.getElementById('phone').value.trim();
-  const license = document.getElementById('license').value;
-
-  if(candidates.some(c => c.name === name && c.phone === phone)){
-    alert("هذا المترشح مسجل بالفعل!");
-    return;
-  }
-
-  const candidate = {
-    id: Date.now(),
-    name: name,
-    age: document.getElementById('age').value,
-    phone: phone,
-    license: license,
-    lessons: [],
-    progress: []
-  };
-  candidates.push(candidate);
-  saveCandidates();
-  document.getElementById('candidateForm').reset();
-});
-
-// فتح خانة التعديل
-function editCandidate(id){
-  currentEditId = id;
-  const candidate = candidates.find(c => c.id === id);
-  document.getElementById('lessonDate').value = '';
-  document.getElementById('lessonTitle').value = '';
-  document.getElementById('lessonNote').value = '';
-  document.getElementById('progressValue').value = '';
-  document.getElementById('progressNote').value = '';
-  document.getElementById('editForm').style.display = 'block';
-}
-
-// إضافة الدروس والتقدم
-document.getElementById('addLessonProgress').addEventListener('click', function(){
-  const candidate = candidates.find(c => c.id === currentEditId);
-  if(!candidate) return alert("لم يتم اختيار مترشح");
-
-  const lessonDate = document.getElementById('lessonDate').value;
-  const lessonTitle = document.getElementById('lessonTitle').value.trim();
-  const lessonNote = document.getElementById('lessonNote').value.trim();
-  if(lessonTitle){
-    candidate.lessons.push({ title: lessonTitle, note: lessonNote, date: lessonDate || new Date().toISOString().slice(0,10) });
-  }
-
-  const progressValue = document.getElementById('progressValue').value;
-  const progressNote = document.getElementById('progressNote').value.trim();
-  if(progressValue){
-    candidate.progress.push({ value: progressValue, note: progressNote, date: lessonDate || new Date().toISOString().slice(0,10) });
-  }
-
-  saveCandidates();
-  alert("تم إضافة الدرس و/أو التقدم بنجاح!");
-
-  // مسح الحقول
-  document.getElementById('lessonDate').value = '';
-  document.getElementById('lessonTitle').value = '';
-  document.getElementById('lessonNote').value = '';
-  document.getElementById('progressValue').value = '';
-  document.getElementById('progressNote').value = '';
-});
-
-document.getElementById('cancelEdit').addEventListener('click', function(){
-  document.getElementById('editForm').style.display = 'none';
-});
-
 // تحديث لوحة المترشحين
-function updateDashboard() {
+function updateDashboard(){
   const candidatesList = document.getElementById('candidatesList');
   if(candidates.length === 0){
     candidatesList.innerHTML = "<p>لا يوجد مترشحين بعد.</p>";
     return;
   }
-  let html = "<table><tr><th>الرقم</th><th>الاسم</th><th>العمر</th><th>الهاتف</th><th>الرخصة</th><th>تعديل</th></tr>";
+  let html = "<table><tr><th>الرقم</th><th>الاسم</th><th>العمر</th><th>الهاتف</th><th>الرخصة</th><th>تعديل</th><th>حذف</th></tr>";
   candidates.forEach((c,index)=>{
     html += `<tr>
       <td>${index+1}</td>
@@ -169,30 +100,120 @@ function updateDashboard() {
       <td>${c.age}</td>
       <td>${c.phone}</td>
       <td>${c.license}</td>
-      <td><button onclick="editCandidate(${c.id})">Edit</button></td>
+      <td><button onclick="editCandidate('${c.id}')">Edit</button></td>
+      <td><button onclick="deleteCandidate('${c.id}')" style="background:#c00;">Delete</button></td>
     </tr>`;
   });
   html += "</table>";
   candidatesList.innerHTML = html;
 }
 
-updateDashboard();
-</script>
-<script>
+// إضافة مترشح
+document.getElementById('candidateForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const age = document.getElementById('age').value;
+  const license = document.getElementById('license').value;
+
+  // تحقق من الاسم والهاتف مكرر
+  if(candidates.some(c => c.name===name && c.phone===phone)){
+    alert("هذا المترشح مسجل بالفعل!");
+    return;
+  }
+
+  const newCandidate = { data: { name, phone, age, license, lessons:"", progress:"" } };
+  await fetch(API_URL, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(newCandidate) });
+
+  // إعادة جلب البيانات
+  await fetchCandidates();
+  document.getElementById('candidateForm').reset();
+});
+
+// فتح خانة التعديل
+function editCandidate(id){
+  currentEditId = id;
+  const candidate = candidates.find(c => c.id == id);
+  if(!candidate) return alert("المترشح غير موجود");
+
+  document.getElementById('lessonDate').value = '';
+  document.getElementById('lessonTitle').value = '';
+  document.getElementById('lessonNote').value = '';
+  document.getElementById('progressValue').value = '';
+  document.getElementById('progressNote').value = '';
+
+  document.getElementById('editForm').style.display = 'block';
+}
+
+// إضافة الدروس والتقدم
+document.getElementById('addLessonProgress').addEventListener('click', async function(){
+  if(!currentEditId) return alert("لم يتم اختيار مترشح");
+
+  const candidate = candidates.find(c => c.id==currentEditId);
+  if(!candidate) return alert("المترشح غير موجود");
+
+  // الدروس
+  let lessons = candidate.lessons ? JSON.parse(candidate.lessons) : [];
+  const lessonTitle = document.getElementById('lessonTitle').value.trim();
+  const lessonNote = document.getElementById('lessonNote').value.trim();
+  const lessonDate = document.getElementById('lessonDate').value || new Date().toISOString().slice(0,10);
+  if(lessonTitle){
+    lessons.push({ title:lessonTitle, note:lessonNote, date:lessonDate });
+  }
+
+  // التقدم
+  let progress = candidate.progress ? JSON.parse(candidate.progress) : [];
+  const progressValue = document.getElementById('progressValue').value;
+  const progressNote = document.getElementById('progressNote').value.trim();
+  if(progressValue){
+    progress.push({ value:progressValue, note:progressNote, date:lessonDate });
+  }
+
+  const updatedData = {
+    data:{
+      lessons: JSON.stringify(lessons),
+      progress: JSON.stringify(progress)
+    }
+  };
+
+  await fetch(`${API_URL}/id/${currentEditId}`, {
+    method:"PATCH",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(updatedData)
+  });
+
+  await fetchCandidates();
+  alert("تم تحديث الدروس والتقدم!");
+
+  document.getElementById('editForm').style.display = 'none';
+});
+
+// حذف مترشح
+async function deleteCandidate(id){
+  if(!confirm("هل تريد حذف هذا المترشح؟")) return;
+  await fetch(`${API_URL}/id/${id}`, { method:"DELETE" });
+  await fetchCandidates();
+}
+
 // منع الدخول إذا لم يكن admin مسجل الدخول
 if(localStorage.getItem("adminLogged") !== "yes"){
     window.location.href = "admin-login.html";
 }
+
+// logout
+function logout(){
+    localStorage.removeItem("adminLogged");
+    window.location.href = "admin-login.html";
+}
 </script>
+
 <button onclick="logout()" style="background:#c00; color:white; padding:8px; border:none; border-radius:6px; cursor:pointer;">
 خروج
 </button>
 
 <script>
-function logout(){
-    localStorage.removeItem("adminLogged");
-    window.location.href = "admin-login.html";
-}
+// تحميل المترشحين أول مرة
+fetchCandidates();
 </script>
 
 </body>
