@@ -11,7 +11,7 @@ header h1 { margin:0; font-size:36px; }
 nav { text-align:center; margin:20px 0; }
 nav a { margin:0 10px; text-decoration:none; color:#004aad; font-weight:bold; padding:10px 20px; border:2px solid #004aad; border-radius:8px; transition:0.3s; }
 nav a:hover { background:#004aad; color:white; }
-section { padding:20px; max-width:800px; margin:auto; background:white; border-radius:10px; box-shadow:0 6px 10px rgba(0,0,0,0.1); }
+section { padding:20px; max-width:900px; margin:auto; background:white; border-radius:10px; box-shadow:0 6px 10px rgba(0,0,0,0.1); }
 h2 { text-align:center; color:#004aad; }
 form, .edit-form { display:flex; flex-direction:column; gap:12px; margin-top:20px; }
 input, select, button { padding:10px; font-size:16px; border-radius:6px; border:1px solid #ccc; }
@@ -21,7 +21,7 @@ table { width:100%; border-collapse: collapse; margin-top:15px; }
 th, td { border:1px solid #ccc; padding:10px; text-align:center; }
 .edit-form { display:none; margin-top:20px; background:#eef1f5; padding:15px; border-radius:8px; }
 label { font-weight:bold; }
-.delete-btn { background:#c00; color:white; }
+.delete-btn { background:#c00; }
 </style>
 </head>
 <body>
@@ -31,7 +31,9 @@ label { font-weight:bold; }
   <p>إدارة المترشحين والدروس</p>
 </header>
 
-<nav><a href="index.html">الصفحة الرئيسية</a></nav>
+<nav>
+  <a href="index.html">الصفحة الرئيسية</a>
+</nav>
 
 <section>
   <h2>إضافة مترشح جديد</h2>
@@ -48,45 +50,111 @@ label { font-weight:bold; }
   </form>
 
   <div class="dashboard" id="candidatesList">
-    <p>جاري تحميل المترشحين...</p>
+    <p>لا يوجد مترشحين بعد.</p>
   </div>
 
   <div class="edit-form" id="editForm">
     <h3>إضافة / تعديل درس وتقدم</h3>
-
     <label for="lessonDate">التاريخ:</label>
     <input type="date" id="lessonDate">
-
     <label for="lessonTitle">عنوان الدرس:</label>
     <input type="text" id="lessonTitle" placeholder="اكتب عنوان الدرس هنا">
-
     <label for="lessonNote">ملاحظة عن الدرس:</label>
     <input type="text" id="lessonNote" placeholder="يمكنك إضافة ملاحظة">
-
     <label for="progressValue">التقدم (%):</label>
     <input type="number" id="progressValue" placeholder="مثال: 50" min="0" max="100">
-
     <label for="progressNote">ملاحظة عن التقدم:</label>
     <input type="text" id="progressNote" placeholder="يمكنك إضافة ملاحظة">
-
     <button id="addLessonProgress">إضافة / تحديث</button>
     <button id="cancelEdit" style="background-color:#ccc; color:#333;">إلغاء</button>
   </div>
 </section>
 
 <script>
-const API_URL = "https://sheetdb.io/api/v1/o1glqkhxgb58a";
-let candidates = [];
+let candidates = JSON.parse(localStorage.getItem('candidates')) || [];
 let currentEditId = null;
 
-// تحميل المترشحين من Google Sheets
-async function loadCandidates(){
-  const res = await fetch(API_URL);
-  candidates = await res.json();
+function saveCandidates(){
+  localStorage.setItem('candidates', JSON.stringify(candidates));
   updateDashboard();
 }
 
-// تحديث لوحة المترشحين
+document.getElementById('candidateForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const license = document.getElementById('license').value;
+  const age = document.getElementById('age').value;
+
+  if(candidates.some(c => c.phone === phone)){
+    alert("رقم الهاتف مسجل مسبقاً!");
+    return;
+  }
+
+  const candidate = {
+    id: Date.now().toString(),
+    name: name,
+    age: age,
+    phone: phone,
+    license: license,
+    lessons: [],
+    progress: []
+  };
+  candidates.push(candidate);
+  saveCandidates();
+  document.getElementById('candidateForm').reset();
+});
+
+function editCandidate(id){
+  currentEditId = id;
+  const candidate = candidates.find(c => c.id === id);
+  if(!candidate) return;
+
+  document.getElementById('lessonDate').value = '';
+  document.getElementById('lessonTitle').value = '';
+  document.getElementById('lessonNote').value = '';
+  document.getElementById('progressValue').value = '';
+  document.getElementById('progressNote').value = '';
+  document.getElementById('editForm').style.display = 'block';
+}
+
+document.getElementById('addLessonProgress').addEventListener('click', function(){
+  const candidate = candidates.find(c => c.id === currentEditId);
+  if(!candidate) return alert("لم يتم اختيار مترشح");
+
+  const lessonDate = document.getElementById('lessonDate').value || new Date().toISOString().slice(0,10);
+  const lessonTitle = document.getElementById('lessonTitle').value.trim();
+  const lessonNote = document.getElementById('lessonNote').value.trim();
+  if(lessonTitle){
+    candidate.lessons.push({ title: lessonTitle, note: lessonNote, date: lessonDate });
+  }
+
+  const progressValue = document.getElementById('progressValue').value;
+  const progressNote = document.getElementById('progressNote').value.trim();
+  if(progressValue){
+    candidate.progress.push({ value: progressValue, note: progressNote, date: lessonDate });
+  }
+
+  saveCandidates();
+  alert("تم إضافة الدرس و/أو التقدم بنجاح!");
+  document.getElementById('lessonDate').value = '';
+  document.getElementById('lessonTitle').value = '';
+  document.getElementById('lessonNote').value = '';
+  document.getElementById('progressValue').value = '';
+  document.getElementById('progressNote').value = '';
+});
+
+document.getElementById('cancelEdit').addEventListener('click', function(){
+  document.getElementById('editForm').style.display = 'none';
+});
+
+function deleteCandidate(id){
+  if(confirm("هل أنت متأكد من حذف هذا المترشح؟")){
+    candidates = candidates.filter(c => c.id !== id);
+    saveCandidates();
+  }
+}
+
 function updateDashboard(){
   const candidatesList = document.getElementById('candidatesList');
   if(candidates.length === 0){
@@ -100,92 +168,28 @@ function updateDashboard(){
       <td>${c.name}</td>
       <td>${c.age}</td>
       <td>${c.phone}</td>
-      <td>${c.license}</td>
+      <td>${c.license || "غير محدد"}</td>
       <td><button onclick="editCandidate('${c.id}')">Edit</button></td>
-      <td><button class="delete-btn" onclick="deleteCandidate('${c.id}')">حذف</button></td>
+      <td><button class="delete-btn" onclick="deleteCandidate('${c.id}')">Delete</button></td>
     </tr>`;
   });
   html += "</table>";
   candidatesList.innerHTML = html;
 }
 
-// إضافة مترشح
-document.getElementById('candidateForm').addEventListener('submit', async function(e){
-  e.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  const age = document.getElementById('age').value;
-  const phone = document.getElementById('phone').value.trim();
-  const license = document.getElementById('license').value;
+updateDashboard();
 
-  const duplicate = candidates.find(c=>c.name===name && c.phone===phone);
-  if(duplicate){ alert("هذا المترشح مسجل بالفعل!"); return; }
-
-  const newCandidate = { name, age, phone, license, lessons: "[]", progress: "[]" };
-  await fetch(API_URL, { method:"POST", headers:{'Content-Type':'application/json'}, body:JSON.stringify({ data: newCandidate }) });
-  document.getElementById('candidateForm').reset();
-  await loadCandidates();
-});
-
-// فتح خانة التعديل
-function editCandidate(id){
-  currentEditId = id;
-  document.getElementById('lessonDate').value = '';
-  document.getElementById('lessonTitle').value = '';
-  document.getElementById('lessonNote').value = '';
-  document.getElementById('progressValue').value = '';
-  document.getElementById('progressNote').value = '';
-  document.getElementById('editForm').style.display = 'block';
+// حماية دخول admin
+if(localStorage.getItem("adminLogged") !== "yes"){
+    window.location.href = "admin-login.html";
 }
 
-// إضافة الدروس والتقدم
-document.getElementById('addLessonProgress').addEventListener('click', async function(){
-  const candidate = candidates.find(c=>c.id===currentEditId);
-  if(!candidate) return alert("لم يتم اختيار مترشح");
-
-  let lessons = [];
-  let progress = [];
-  try { lessons = candidate.lessons ? JSON.parse(candidate.lessons) : []; } catch(e){ lessons=[]; }
-  try { progress = candidate.progress ? JSON.parse(candidate.progress) : []; } catch(e){ progress=[]; }
-
-  const lessonDate = document.getElementById('lessonDate').value;
-  const lessonTitle = document.getElementById('lessonTitle').value.trim();
-  const lessonNote = document.getElementById('lessonNote').value.trim();
-  if(lessonTitle){
-    lessons.push({ title: lessonTitle, note: lessonNote, date: lessonDate || new Date().toISOString().slice(0,10) });
-  }
-
-  const progressValue = document.getElementById('progressValue').value;
-  const progressNote = document.getElementById('progressNote').value.trim();
-  if(progressValue){
-    progress.push({ value: progressValue, note: progressNote, date: lessonDate || new Date().toISOString().slice(0,10) });
-  }
-
-  await fetch(`${API_URL}/id/${currentEditId}`, {
-    method:"PATCH",
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ data: { lessons: JSON.stringify(lessons), progress: JSON.stringify(progress) } })
-  });
-
-  document.getElementById('editForm').style.display = 'none';
-  await loadCandidates();
-  alert("تم إضافة الدرس و/أو التقدم بنجاح!");
-});
-
-// إلغاء التعديل
-document.getElementById('cancelEdit').addEventListener('click', function(){
-  document.getElementById('editForm').style.display='none';
-});
-
-// حذف مترشح
-async function deleteCandidate(id){
-  if(!confirm("هل أنت متأكد من حذف هذا المترشح؟")) return;
-  await fetch(`${API_URL}/id/${id}`, { method:"DELETE" });
-  await loadCandidates();
+function logout(){
+    localStorage.removeItem("adminLogged");
+    window.location.href = "admin-login.html";
 }
-
-// أول تحميل
-loadCandidates();
 </script>
 
+<button onclick="logout()" style="background:#c00; color:white; padding:8px; border:none; border-radius:6px; cursor:pointer;">خروج</button>
 </body>
 </html>
