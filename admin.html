@@ -83,6 +83,14 @@ async function fetchCandidates(){
   try{
     const res = await fetch(SHEETDB_API);
     candidates = await res.json();
+
+    // تحويل الدروس والتقدم من نص JSON لمصفوفة
+    candidates = candidates.map(c => ({
+      ...c,
+      lessons: c.lessons && typeof c.lessons === "string" ? JSON.parse(c.lessons) : c.lessons || [],
+      progress: c.progress && typeof c.progress === "string" ? JSON.parse(c.progress) : c.progress || []
+    }));
+
     updateDashboard();
   }catch(e){ console.error("خطأ ف جلب البيانات", e); }
 }
@@ -111,7 +119,7 @@ document.getElementById('candidateForm').addEventListener('submit', async functi
       body: JSON.stringify({ data: newCandidate })
     });
     alert("تم إضافة المترشح بنجاح!");
-    fetchCandidates(); // تحديث اللوحة
+    fetchCandidates();
     document.getElementById('candidateForm').reset();
   }catch(e){ console.error("خطأ ف إضافة المترشح", e); }
 });
@@ -171,11 +179,19 @@ document.getElementById('addLessonProgress').addEventListener('click', async fun
   }
 
   try{
+    // تحويل الدروس والتقدم لنص JSON قبل الإرسال
+    const dataToUpdate = {
+      ...candidate,
+      lessons: JSON.stringify(candidate.lessons),
+      progress: JSON.stringify(candidate.progress)
+    };
+
     await fetch(`${SHEETDB_API}/id/${candidate.id}`,{
       method:"PUT",
       headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ data: candidate })
+      body: JSON.stringify({ data: dataToUpdate })
     });
+
     alert("تم تحديث الدروس والتقدم بنجاح!");
     fetchCandidates();
     document.getElementById('editForm').style.display = 'none';
