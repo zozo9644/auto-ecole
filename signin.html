@@ -29,7 +29,7 @@ ul { padding-left:20px; }
   <h2>تسجيل الدخول</h2>
   <form id="signinForm">
     <input type="text" id="name" placeholder="الاسم الكامل" required>
-    <input type="tel" id="phone" placeholder="رقم الهاتف" required>
+    <input type="tel" id="phone" placeholder="رقم الهاتف (06xxxxxxx)" required>
     <button type="submit">تسجيل الدخول</button>
   </form>
 
@@ -44,55 +44,66 @@ ul { padding-left:20px; }
 </section>
 
 <script>
+const SHEETDB_API = "https://sheetdb.io/api/v1/o1glqkhxgb58a";
 let currentCandidate = null;
 
-function updateCandidateDashboard() {
-  if(!currentCandidate) return;
-  const candidatesLatest = JSON.parse(localStorage.getItem('candidates')) || [];
-  const candidate = candidatesLatest.find(c => c.id === currentCandidate.id);
-  if(!candidate) return;
-
-  currentCandidate = candidate;
-
+// تحديث لوحة المترشح
+function updateCandidateDashboard(candidate){
   document.getElementById('candidateName').textContent = candidate.name;
-  document.getElementById('candidateLicense').textContent = candidate.license || "غير محدد";
+  document.getElementById('candidateLicense').textContent = candidate.license;
 
-  const sortedLessons = [...candidate.lessons].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const sortedProgress = [...candidate.progress].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const sortedLessons = candidate.lessons ? [...candidate.lessons].sort((a,b)=>new Date(b.date)-new Date(a.date)) : [];
+  const sortedProgress = candidate.progress ? [...candidate.progress].sort((a,b)=>new Date(b.date)-new Date(a.date)) : [];
 
-  document.getElementById('lessonsList').innerHTML = sortedLessons.length ? 
-    sortedLessons.map(l=>`<li>${l.title} - ${l.note} (${l.date})</li>`).join('') : "<li>لا يوجد دروس مسجلة بعد</li>";
-  document.getElementById('progressList').innerHTML = sortedProgress.length ? 
-    sortedProgress.map(p=>`<li>${p.value}% - ${p.note} (${p.date})</li>`).join('') : "<li>لا يوجد تقدم مسجل بعد</li>";
+  document.getElementById('lessonsList').innerHTML = sortedLessons.length ? sortedLessons.map(l=>`<li>${l.title} - ${l.note} (${l.date})</li>`).join('') : "<li>لا يوجد دروس مسجلة بعد</li>";
+  document.getElementById('progressList').innerHTML = sortedProgress.length ? sortedProgress.map(p=>`<li>${p.value}% - ${p.note} (${p.date})</li>`).join('') : "<li>لا يوجد تقدم مسجل بعد</li>";
 }
 
-document.getElementById('signinForm').addEventListener('submit', function(e){
+// تسجيل الدخول
+document.getElementById('signinForm').addEventListener('submit', async function(e){
   e.preventDefault();
   const name = document.getElementById('name').value.trim();
-  let phone = document.getElementById('phone').value.trim();
+  const phoneInput = document.getElementById('phone').value.trim();
+  const phone = phoneInput.startsWith("0") ? phoneInput : "0"+phoneInput;
 
-  // التعامل مع الأصفار الأولى
-  if(phone.length === 9 && !phone.startsWith('0')) phone = '0'+phone;
+  try{
+    const res = await fetch(SHEETDB_API);
+    const allCandidates = await res.json();
 
-  const candidatesLatest = JSON.parse(localStorage.getItem('candidates')) || [];
-  const candidate = candidatesLatest.find(c => c.name === name && c.phone === phone);
+    const candidate = allCandidates.find(c => c.name === name && c.phone === phone);
 
-  if(!candidate){
-    alert("المترشح غير موجود! تأكد من الاسم ورقم الهاتف.");
-    return;
-  }
+    if(!candidate){
+      alert("المترشح غير موجود! تأكد من الاسم ورقم الهاتف.");
+      return;
+    }
 
-  currentCandidate = candidate;
-  document.getElementById('signinForm').style.display = 'none';
-  document.getElementById('dashboard').style.display = 'block';
-  updateCandidateDashboard();
+    currentCandidate = candidate;
+    document.getElementById('signinForm').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+
+    // تحويل الدروس والتقدم من نص JSON إلى مصفوفة
+    currentCandidate.lessons = candidate.lessons && typeof candidate.lessons === "string" ? JSON.parse(candidate.lessons) : candidate.lessons || [];
+    currentCandidate.progress = candidate.progress && typeof candidate.progress === "string" ? JSON.parse(candidate.progress) : candidate.progress || [];
+
+    updateCandidateDashboard(currentCandidate);
+
+  }catch(e){ console.error("خطأ ف جلب البيانات", e); }
 });
 
-window.addEventListener('storage', function(e){
-  if(e.key === 'candidates' && currentCandidate){
-    updateCandidateDashboard();
-  }
-});
+// متابعة التحديثات مباشرة من Google Sheets
+setInterval(async ()=>{
+  if(!currentCandidate) return;
+  try{
+    const res = await fetch(SHEETDB_API);
+    const allCandidates = await res.json();
+    const candidate = allCandidates.find(c => Number(c.id) === Number(currentCandidate.id));
+    if(candidate){
+      candidate.lessons = candidate.lessons && typeof candidate.lessons === "string" ? JSON.parse(candidate.lessons) : candidate.lessons || [];
+      candidate.progress = candidate.progress && typeof candidate.progress === "string" ? JSON.parse(candidate.progress) : candidate.progress || [];
+      updateCandidateDashboard(candidate);
+    }
+  }catch(e){ console.error(e); }
+},5000); // تحديث كل 5 ثواني
 </script>
 
 </body>
