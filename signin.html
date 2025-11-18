@@ -52,19 +52,27 @@ function updateCandidateDashboard(candidate){
   document.getElementById('candidateName').textContent = candidate.name;
   document.getElementById('candidateLicense').textContent = candidate.license;
 
-  const sortedLessons = candidate.lessons ? [...candidate.lessons].sort((a,b)=>new Date(b.date)-new Date(a.date)) : [];
-  const sortedProgress = candidate.progress ? [...candidate.progress].sort((a,b)=>new Date(b.date)-new Date(a.date)) : [];
+  const lessons = candidate.lessons ? (typeof candidate.lessons === "string" ? JSON.parse(candidate.lessons) : candidate.lessons) : [];
+  const progress = candidate.progress ? (typeof candidate.progress === "string" ? JSON.parse(candidate.progress) : candidate.progress) : [];
 
-  document.getElementById('lessonsList').innerHTML = sortedLessons.length ? sortedLessons.map(l=>`<li>${l.title} - ${l.note} (${l.date})</li>`).join('') : "<li>لا يوجد دروس مسجلة بعد</li>";
-  document.getElementById('progressList').innerHTML = sortedProgress.length ? sortedProgress.map(p=>`<li>${p.value}% - ${p.note} (${p.date})</li>`).join('') : "<li>لا يوجد تقدم مسجل بعد</li>";
+  const sortedLessons = lessons.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const sortedProgress = progress.sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  document.getElementById('lessonsList').innerHTML = sortedLessons.length 
+    ? sortedLessons.map(l=>`<li>${l.title} - ${l.note} (${l.date})</li>`).join('')
+    : "<li>لا يوجد دروس مسجلة بعد</li>";
+
+  document.getElementById('progressList').innerHTML = sortedProgress.length 
+    ? sortedProgress.map(p=>`<li>${p.value}% - ${p.note} (${p.date})</li>`).join('')
+    : "<li>لا يوجد تقدم مسجل بعد</li>";
 }
 
 // تسجيل الدخول
 document.getElementById('signinForm').addEventListener('submit', async function(e){
   e.preventDefault();
   const name = document.getElementById('name').value.trim();
-  const phoneInput = document.getElementById('phone').value.trim();
-  const phone = phoneInput.startsWith("0") ? phoneInput : "0"+phoneInput;
+  let phone = document.getElementById('phone').value.trim();
+  if(!phone.startsWith("0")) phone = "0"+phone;
 
   try{
     const res = await fetch(SHEETDB_API);
@@ -78,19 +86,23 @@ document.getElementById('signinForm').addEventListener('submit', async function(
     }
 
     currentCandidate = candidate;
-    document.getElementById('signinForm').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
 
-    // تحويل الدروس والتقدم من نص JSON إلى مصفوفة
+    // تحويل الدروس والتقدم من نص JSON إلى مصفوفة إذا كانت نص
     currentCandidate.lessons = candidate.lessons && typeof candidate.lessons === "string" ? JSON.parse(candidate.lessons) : candidate.lessons || [];
     currentCandidate.progress = candidate.progress && typeof candidate.progress === "string" ? JSON.parse(candidate.progress) : candidate.progress || [];
 
+    document.getElementById('signinForm').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+
     updateCandidateDashboard(currentCandidate);
 
-  }catch(e){ console.error("خطأ ف جلب البيانات", e); }
+  }catch(e){
+    console.error("خطأ ف جلب البيانات", e);
+    alert("حدث خطأ أثناء جلب البيانات. حاول لاحقاً.");
+  }
 });
 
-// متابعة التحديثات مباشرة من Google Sheets
+// متابعة التحديثات مباشرة من Google Sheets كل 5 ثواني
 setInterval(async ()=>{
   if(!currentCandidate) return;
   try{
@@ -103,7 +115,7 @@ setInterval(async ()=>{
       updateCandidateDashboard(candidate);
     }
   }catch(e){ console.error(e); }
-},5000); // تحديث كل 5 ثواني
+},5000);
 </script>
 
 </body>
