@@ -47,43 +47,40 @@ ul { padding-left:20px; }
 const API_URL = "https://sheetdb.io/api/v1/o1glqkhxgb58a";
 let currentCandidate = null;
 
-// تحديث لوحة المترشح
-function updateCandidateDashboard(candidate){
-  document.getElementById('candidateName').textContent = candidate.name;
-  document.getElementById('candidateLicense').textContent = candidate.license;
-
-  const lessons = candidate.lessons ? JSON.parse(candidate.lessons) : [];
-  const progress = candidate.progress ? JSON.parse(candidate.progress) : [];
-
-  document.getElementById('lessonsList').innerHTML = lessons.length 
-    ? lessons.map(l=>`<li>${l.title} - ${l.note} (${l.date})</li>`).join('')
-    : "<li>لا يوجد دروس مسجلة بعد</li>";
-
-  document.getElementById('progressList').innerHTML = progress.length
-    ? progress.map(p=>`<li>${p.value}% - ${p.note} (${p.date})</li>`).join('')
-    : "<li>لا يوجد تقدم مسجل بعد</li>";
-}
-
-// تسجيل دخول
+// تسجيل الدخول
 document.getElementById('signinForm').addEventListener('submit', async function(e){
   e.preventDefault();
   const name = document.getElementById('name').value.trim();
   const phone = document.getElementById('phone').value.trim();
 
-  const res = await fetch(API_URL);
-  const candidates = await res.json();
+  const res = await fetch(`${API_URL}?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`);
+  const data = await res.json();
 
-  const candidate = candidates.find(c => c.name === name && c.phone === phone);
-  if(!candidate){
+  if(data.length === 0){
     alert("المترشح غير موجود! تأكد من الاسم ورقم الهاتف.");
     return;
   }
 
-  currentCandidate = candidate;
-  document.getElementById('signinForm').style.display = 'none';
-  document.getElementById('dashboard').style.display = 'block';
-  updateCandidateDashboard(candidate);
+  currentCandidate = data[0];
+  document.getElementById('signinForm').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  updateCandidateDashboard();
 });
+
+// تحديث الدروس والتقدم
+function updateCandidateDashboard(){
+  if(!currentCandidate) return;
+  let lessons = [];
+  let progress = [];
+  try { lessons = currentCandidate.lessons ? JSON.parse(currentCandidate.lessons) : []; } catch(e){ lessons=[]; }
+  try { progress = currentCandidate.progress ? JSON.parse(currentCandidate.progress) : []; } catch(e){ progress=[]; }
+
+  document.getElementById('candidateName').textContent = currentCandidate.name;
+  document.getElementById('candidateLicense').textContent = currentCandidate.license;
+
+  document.getElementById('lessonsList').innerHTML = lessons.length ? lessons.map(l=>`<li>${l.title} - ${l.note} (${l.date})</li>`).join('') : "<li>لا يوجد دروس مسجلة بعد</li>";
+  document.getElementById('progressList').innerHTML = progress.length ? progress.map(p=>`<li>${p.value}% - ${p.note} (${p.date})</li>`).join('') : "<li>لا يوجد تقدم مسجل بعد</li>";
+}
 </script>
 
 </body>
