@@ -83,14 +83,12 @@ async function fetchCandidates(){
   try{
     const res = await fetch(SHEETDB_API);
     candidates = await res.json();
-
-    // تحويل الدروس والتقدم من نص JSON لمصفوفة
+    // تحويل الدروس والتقدم من نص JSON إذا كانوا موجودين
     candidates = candidates.map(c => ({
       ...c,
-      lessons: c.lessons && typeof c.lessons === "string" ? JSON.parse(c.lessons) : c.lessons || [],
-      progress: c.progress && typeof c.progress === "string" ? JSON.parse(c.progress) : c.progress || []
+      lessons: c.lessons ? JSON.parse(c.lessons) : [],
+      progress: c.progress ? JSON.parse(c.progress) : []
     }));
-
     updateDashboard();
   }catch(e){ console.error("خطأ ف جلب البيانات", e); }
 }
@@ -111,7 +109,6 @@ document.getElementById('candidateForm').addEventListener('submit', async functi
 
   const newCandidate = { name, age, phone, license, lessons: [], progress: [], id: Date.now() };
 
-  // ارسال للـ Google Sheets
   try{
     await fetch(SHEETDB_API, {
       method: "POST",
@@ -160,7 +157,7 @@ function editCandidate(id){
   document.getElementById('editForm').style.display = 'block';
 }
 
-// إضافة الدروس والتقدم
+// إضافة/تحديث الدروس والتقدم
 document.getElementById('addLessonProgress').addEventListener('click', async function(){
   const candidate = candidates.find(c => Number(c.id) === Number(currentEditId));
   if(!candidate) return alert("لم يتم اختيار مترشح");
@@ -179,7 +176,7 @@ document.getElementById('addLessonProgress').addEventListener('click', async fun
   }
 
   try{
-    // تحويل الدروس والتقدم لنص JSON قبل الإرسال
+    // تحويل الدروس والتقدم لـ JSON قبل الإرسال
     const dataToUpdate = {
       ...candidate,
       lessons: JSON.stringify(candidate.lessons),
@@ -208,7 +205,7 @@ async function deleteCandidate(id){
   }catch(e){ console.error("خطأ ف الحذف", e); }
 }
 
-// تفعيل admin login (محلي)
+// admin login محلي
 if(localStorage.getItem("adminLogged") !== "yes"){
     window.location.href = "admin-login.html";
 }
