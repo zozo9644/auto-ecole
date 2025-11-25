@@ -9,14 +9,14 @@ body { font-family: Arial; direction: rtl; background: linear-gradient(135deg, #
 header { text-align:center; padding:40px 20px; }
 header h1 { font-size:36px; margin:0; }
 section { background: rgba(255,255,255,0.1); max-width:500px; margin:auto; padding:30px; border-radius:12px; }
-input, button { padding:12px; font-size:16px; border-radius:6px; border:none; }
+input, button { padding:12px; font-size:16px; border-radius:6px; border:none; width:100%; margin-bottom:10px; }
 input { border:1px solid #fff; background:rgba(255,255,255,0.2); color:#fff; }
 input::placeholder { color:#eee; }
 button { background:#004aad; color:white; cursor:pointer; transition:0.3s; }
 button:hover { background:#003080; }
 .dashboard { margin-top:20px; background: rgba(255,255,255,0.2); padding:15px; border-radius:8px; }
 ul { padding-left:20px; }
-.error { color: #ffdddd; margin-top: 10px; text-align: center; }
+.error { color: #ffdddd; background: #aa0000; padding:8px; border-radius:5px; margin-bottom:10px; display:none; }
 </style>
 </head>
 <body>
@@ -27,14 +27,12 @@ ul { padding-left:20px; }
 </header>
 
 <section>
-  <h2>تسجيل الدخول</h2>
+  <div id="errorMsg" class="error"></div>
   <form id="signinForm">
     <input type="text" id="name" placeholder="الاسم الكامل" required>
     <input type="tel" id="phone" placeholder="رقم الهاتف (06xxxxxxx)" required>
     <button type="submit">تسجيل الدخول</button>
   </form>
-
-  <div class="error" id="errorMsg"></div>
 
   <div class="dashboard" id="dashboard" style="display:none;">
     <h3>مرحباً، <span id="candidateName"></span></h3>
@@ -50,17 +48,11 @@ ul { padding-left:20px; }
 const SHEETDB_API = "https://sheetdb.io/api/v1/o1glqkhxgb58a";
 let currentCandidate = null;
 
-// تحويل نص JSON بشكل آمن
+// دالة آمنة لتحويل JSON
 function safeJSON(data){
-  if(!data || data === "" || data === " "){
-    return [];
-  }
-  try{
-    return JSON.parse(data);
-  }catch(e){
-    console.warn("JSON Parse Failed:", data);
-    return [];
-  }
+  if(!data || data === "" || data === " ") return [];
+  try { return JSON.parse(data); } 
+  catch(e){ console.warn("JSON Parse Failed:", data); return []; }
 }
 
 // تحديث لوحة المترشح
@@ -75,36 +67,43 @@ function updateCandidateDashboard(candidate){
   const sortedProgress = progress.sort((a,b)=>new Date(b.date)-new Date(a.date));
 
   document.getElementById('lessonsList').innerHTML = sortedLessons.length 
-    ? sortedLessons.map(l=>`<li>${l.date} — <b>${l.title}</b>: ${l.note}</li>`).join('')
+    ? sortedLessons.map(l=>`<li>${l.title} - ${l.note} (${l.date})</li>`).join('')
     : "<li>لا يوجد دروس مسجلة بعد</li>";
 
   document.getElementById('progressList').innerHTML = sortedProgress.length 
-    ? sortedProgress.map(p=>`<li>${p.date} — <b>${p.value}%</b>: ${p.note}</li>`).join('')
+    ? sortedProgress.map(p=>`<li>${p.value}% - ${p.note} (${p.date})</li>`).join('')
     : "<li>لا يوجد تقدم مسجل بعد</li>";
 }
 
 // تسجيل الدخول
 document.getElementById('signinForm').addEventListener('submit', async function(e){
   e.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  let phone = document.getElementById('phone').value.trim();
-  if(!phone.startsWith("0")) phone = "0"+phone;
+  
+  const nameInput = document.getElementById('name').value.trim().toLowerCase().replace(/\s+/g,"");
+  let phoneInput = document.getElementById('phone').value.trim().replace(/\D/g,""); // إزالة أي أحرف غير الأرقام
+  if(phoneInput.startsWith("0")) phoneInput = phoneInput.slice(1); // normalize بدون صفر
 
-  const normalizedName = name.toLowerCase().trim();
-  const normalizedPhone = phone.replace(/\s+/g, "");
+  const errorDiv = document.getElementById('errorMsg');
+  errorDiv.style.display = "none";
 
   try{
     const res = await fetch(SHEETDB_API);
     const allCandidates = await res.json();
 
+    // البحث المرن
     const candidate = allCandidates.find(c => {
-      const cName = (c.name || "").toLowerCase().trim();
-      const cPhone = String(c.phone || "").trim().replace(/\s+/g, "");
-      return cName === normalizedName && cPhone === normalizedPhone;
+      const cName = (c.name || "").toLowerCase().replace(/\s+/g,"");
+      let cPhone = String(c.phone || "").replace(/\D/g,"");
+      if(cPhone.startsWith("0")) cPhone = cPhone.slice(1);
+
+      const nameMatch = cName === nameInput;
+      const phoneMatch = cPhone.slice(-9) === phoneInput.slice(-9); // آخر 9 أرقام فقط
+      return nameMatch && phoneMatch;
     });
 
     if(!candidate){
-      document.getElementById('errorMsg').textContent = "المترشح غير موجود! تأكد من الاسم ورقم الهاتف.";
+      errorDiv.innerText = "المترشح غير موجود! تأكد من الاسم ورقم الهاتف.";
+      errorDiv.style.display = "block";
       return;
     }
 
@@ -113,37 +112,31 @@ document.getElementById('signinForm').addEventListener('submit', async function(
     currentCandidate.progress = safeJSON(candidate.progress);
 
     document.getElementById('signinForm').style.display = 'none';
-    document.getElementById('errorMsg').textContent = "";
     document.getElementById('dashboard').style.display = 'block';
 
     updateCandidateDashboard(currentCandidate);
 
   }catch(e){
     console.error("خطأ ف جلب البيانات", e);
-    document.getElementById('errorMsg').textContent = "حدث خطأ أثناء جلب البيانات. حاول لاحقاً.";
+    errorDiv.innerText = "حدث خطأ أثناء جلب البيانات. حاول لاحقاً.";
+    errorDiv.style.display = "block";
   }
 });
 
-// تحديث تلقائي كل 5 ثواني
+// تحديث البيانات كل 5 ثواني
 setInterval(async ()=>{
   if(!currentCandidate) return;
   try{
     const res = await fetch(SHEETDB_API);
     const allCandidates = await res.json();
-
     const candidate = allCandidates.find(c => Number(c.id) === Number(currentCandidate.id));
-
     if(candidate){
       candidate.lessons = safeJSON(candidate.lessons);
       candidate.progress = safeJSON(candidate.progress);
       updateCandidateDashboard(candidate);
     }
-
-  }catch(e){
-    console.error(e);
-  }
+  }catch(e){ console.error(e); }
 },5000);
-
 </script>
 
 </body>
