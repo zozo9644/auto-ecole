@@ -3,37 +3,89 @@
 <head>
 <meta charset="UTF-8">
 <title>Admin Login</title>
+
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+
     body {
-        margin: 0; font-family: Arial;
-        background: #f0f0f0; height: 100vh;
-        display: flex; justify-content: center; align-items: center;
+        margin: 0;
+        font-family: 'Cairo', sans-serif;
+        direction: rtl;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(135deg, #004aad, #001f54);
     }
+
     .box {
-        width: 320px; background: white;
-        padding: 25px; border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        width: 350px;
+        padding: 35px 25px;
+        border-radius: 18px;
         text-align: center;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(15px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.30);
+        animation: fadeIn 0.9s ease;
     }
+
+    h2 {
+        color: white;
+        margin-bottom: 25px;
+        font-size: 26px;
+        font-weight: 700;
+    }
+
     input {
-        width: 100%; padding: 10px;
-        margin: 8px 0; border-radius: 7px;
-        border: 1px solid #ccc; font-size: 16px;
+        width: 100%;
+        padding: 12px;
+        margin: 10px 0;
+        border-radius: 10px;
+        border: none;
+        font-size: 17px;
+        outline: none;
     }
+
+    input:focus {
+        box-shadow: 0 0 8px #82c8ff;
+    }
+
     button {
-        width: 100%; padding: 10px;
-        background: #0077ff; color: white;
-        border: none; border-radius: 7px;
-        cursor: pointer; font-size: 17px;
+        width: 100%;
+        padding: 13px;
+        margin-top: 10px;
+        background: #00a6ff;
+        color: white;
+        font-size: 18px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.3s;
+        font-weight: 600;
     }
-    button:hover { background: #005ed6; }
-    .error { color: red; margin-top: 10px; }
+
+    button:hover {
+        background: #0088d1;
+        transform: scale(1.03);
+    }
+
+    .error {
+        margin-top: 10px;
+        color: #ff4b4b;
+        font-weight: bold;
+        height: 20px;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 </style>
 </head>
 <body>
 
 <div class="box">
-    <h2>Admin Login</h2>
+    <h2>تسجيل الدخول للوحة التحكم</h2>
 
     <input id="user" type="text" placeholder="إسم المستخدم">
     <input id="pass" type="password" placeholder="كلمة السر">
@@ -45,15 +97,15 @@
 
 <script>
 function login() {
-    let u = document.getElementById("user").value;
-    let p = document.getElementById("pass").value;
+    let u = document.getElementById("user").value.trim();
+    let p = document.getElementById("pass").value.trim();
 
-    // عدّل هاد القيم حسب شنو بغيتي
-    if (u === "admin" && p === "1234") {
+    // عدّل اليوزر و الباس اللي بغيتي
+    if (u === "samirasamaan" && p === "2025") {
         localStorage.setItem("admin_logged", "yes");
         window.location.href = "admin.html";
     } else {
-        document.getElementById("err").innerText = "معلومات الدخول غير صحيحة!";
+        document.getElementById("err").innerText = "❌ معلومات الدخول غير صحيحة!";
     }
 }
 </script>
