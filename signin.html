@@ -79,11 +79,7 @@ document.getElementById('signinForm').addEventListener('submit', async function(
     document.getElementById('candidateName').textContent = currentCandidate.name;
     document.getElementById('candidateLicense').textContent = currentCandidate.license;
 
-  }catch(e){
-    console.error("خطأ ف جلب البيانات", e);
-    errorDiv.innerText = "حدث خطأ أثناء جلب البيانات. حاول لاحقاً.";
-    errorDiv.style.display = "block";
-  }
+ 
 });
 </script>
 
