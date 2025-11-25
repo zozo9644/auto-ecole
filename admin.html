@@ -10,8 +10,9 @@ body { font-family: Arial; direction: rtl; background: #f0f2f5; color:#333; marg
 header { background:#004aad; color:white; padding:30px 20px; text-align:center; }
 header h1 { margin:0; font-size:36px; }
 nav { text-align:center; margin:20px 0; }
-nav a { margin:0 10px; text-decoration:none; color:#004aad; font-weight:bold; padding:10px 20px; border:2px solid #004aad; border-radius:8px; transition:0.3s; }
-nav a:hover { background:#004aad; color:white; }
+nav a, nav button { margin:0 10px; text-decoration:none; color:#004aad; font-weight:bold; padding:10px 20px; border:2px solid #004aad; border-radius:8px; transition:0.3s; background:white; cursor:pointer; }
+nav a:hover, nav button:hover { background:#004aad; color:white; }
+
 section { padding:20px; max-width:900px; margin:auto; background:white; border-radius:10px; box-shadow:0 6px 10px rgba(0,0,0,0.1); }
 h2 { text-align:center; color:#004aad; }
 form, .edit-form { display:flex; flex-direction:column; gap:12px; margin-top:20px; }
@@ -22,6 +23,27 @@ table { width:100%; border-collapse: collapse; margin-top:15px; }
 th, td { border:1px solid #ccc; padding:10px; text-align:center; }
 .edit-form { display:none; background:#eef1f5; padding:15px; border-radius:8px; margin-top:20px; }
 label { font-weight:bold; }
+
+/* Popup */
+.popup {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  justify-content: center; align-items: center;
+}
+.popup-content {
+  background: white; color:#000;
+  padding: 20px;
+  width: 90%; max-width: 500px;
+  border-radius: 10px;
+  max-height: 80%;
+  overflow-y: auto;
+}
+.popup-content h3 { margin-top:0; color:#004aad; }
+.close-btn {
+  background:#c00; color:white; padding:10px 20px; border:none;
+  margin-top:15px; }
 </style>
 </head>
 
@@ -34,6 +56,7 @@ label { font-weight:bold; }
 
 <nav>
   <a href="index.html">الصفحة الرئيسية</a>
+  <button onclick="logout()">خروج</button>
 </nav>
 
 <section>
@@ -78,13 +101,18 @@ label { font-weight:bold; }
   </div>
 </section>
 
+<!-- POPUP لعرض الدروس و التقدم -->
+<div class="popup" id="popup">
+  <div class="popup-content" id="popupContent">
+  </div>
+</div>
+
 <script>
 const SHEETDB = "https://sheetdb.io/api/v1/o1glqkhxgb58a";
 
 let candidates = [];
 let currentId = null;
 
-// جلب البيانات
 async function loadData(){
   const r = await fetch(SHEETDB);
   let data = await r.json();
@@ -93,46 +121,40 @@ async function loadData(){
     ...c,
     id: Number(c.id),
     lessons: c.lessons ? JSON.parse(c.lessons) : [],
-    progress: c.progress ? JSON.parse(c.progress) : []
+    progress: c.progress ? JSON.parse(c.progress) : [],
   }));
 
   renderTable();
 }
 loadData();
 
-// إضافة مترشح
 document.getElementById("candidateForm").addEventListener("submit", async (e)=>{
   e.preventDefault();
 
-  let name = document.getElementById("name").value.trim();
-  let age = document.getElementById("age").value;
-  let phone = document.getElementById("phone").value.trim();
-  let license = document.getElementById("license").value;
+  let name = document.querySelector("#name").value.trim();
+  let age = document.querySelector("#age").value.trim();
+  let phone = document.querySelector("#phone").value.trim();
+  let license = document.querySelector("#license").value;
 
   if(!phone.startsWith("0")) phone = "0" + phone;
 
-  const newUser = {
+  let user = {
     id: Date.now(),
-    name,
-    age,
-    phone,
-    license,
-    lessons: "[]",
-    progress: "[]"
+    name, age, phone, license,
+    lessons: "[]", progress: "[]"
   };
 
   await fetch(SHEETDB,{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ data:newUser })
+    body: JSON.stringify({ data:user })
   });
 
-  alert("تمت الإضافة بنجاح!");
-  loadData();
+  alert("تمت إضافة المترشح!");
   e.target.reset();
+  loadData();
 });
 
-// رسم الجدول
 function renderTable(){
   const div = document.getElementById("candidatesList");
 
@@ -144,8 +166,8 @@ function renderTable(){
   let html = `
     <table>
       <tr>
-        <th>#</th><th>الاسم</th><th>العمر</th><th>الهاتف</th>
-        <th>الرخصة</th><th>تعديل</th><th>حذف</th>
+        <th>#</th><th>الاسم</th><th>الهاتف</th><th>الرخصة</th>
+        <th>عرض</th><th>تعديل</th><th>حذف</th>
       </tr>
   `;
 
@@ -154,10 +176,13 @@ function renderTable(){
       <tr>
         <td>${i+1}</td>
         <td>${c.name}</td>
-        <td>${c.age}</td>
         <td>${c.phone}</td>
         <td>${c.license}</td>
-        <td><button onclick="startEdit(${c.id})">Edit</button></td>
+
+        <td><button onclick="showDetails(${c.id})">عرض</button></td>
+
+        <td><button onclick="startEdit(${c.id})">تعديل</button></td>
+
         <td><button style="background:#c00" onclick="removeUser(${c.id})">حذف</button></td>
       </tr>
     `;
@@ -167,27 +192,23 @@ function renderTable(){
   div.innerHTML = html;
 }
 
-// فتح التعديل
 function startEdit(id){
   currentId = id;
   document.getElementById("editForm").style.display = "block";
 }
 
-// إضافة درس أو تقدم
 document.getElementById("addLessonProgress").onclick = async ()=>{
-
   let c = candidates.find(u => u.id === currentId);
-  if(!c) return alert("خطأ!");
+  if(!c) return;
 
   const date = document.getElementById("lessonDate").value || new Date().toISOString().slice(0,10);
-
   const title = document.getElementById("lessonTitle").value.trim();
-  const note  = document.getElementById("lessonNote").value.trim();
-  if(title) c.lessons.push({ title, note, date });
-
+  const note = document.getElementById("lessonNote").value.trim();
   const pv = document.getElementById("progressValue").value;
   const pn = document.getElementById("progressNote").value.trim();
-  if(pv) c.progress.push({ value:pv, note:pn, date });
+
+  if(title) c.lessons.push({title, note, date});
+  if(pv) c.progress.push({value:pv, note:pn, date});
 
   await fetch(`${SHEETDB}/id/${c.id}`,{
     method:"PUT",
@@ -196,18 +217,16 @@ document.getElementById("addLessonProgress").onclick = async ()=>{
       data:{
         ...c,
         lessons: JSON.stringify(c.lessons),
-        progress: JSON.stringify(c.progress)
+        progress: JSON.stringify(c.progress),
       }
     })
   });
 
-  alert("تم التحديث!");
+  alert("تم تحديث البيانات!");
   loadData();
-
   document.getElementById("editForm").style.display = "none";
 };
 
-// حذف
 async function removeUser(id){
   if(!confirm("هل تريد حذف هذا المترشح؟")) return;
 
@@ -220,6 +239,44 @@ async function removeUser(id){
 document.getElementById("cancelEdit").onclick = ()=>{
   document.getElementById("editForm").style.display = "none";
 };
+
+function showDetails(id){
+  const user = candidates.find(c => c.id === id);
+  if(!user) return;
+
+  let html = `<h3>الدروس الخاصة بـ ${user.name}</h3>`;
+
+  html += "<h4>📘 الدروس:</h4>";
+  if(user.lessons.length === 0){
+    html += "<p>لا يوجد دروس.</p>";
+  } else {
+    user.lessons.forEach(l=>{
+      html += `<p>📅 ${l.date} — <b>${l.title}</b> : ${l.note}</p>`;
+    });
+  }
+
+  html += "<h4>📊 التقدم:</h4>";
+  if(user.progress.length === 0){
+    html += "<p>لا يوجد تقدم بعد.</p>";
+  } else {
+    user.progress.forEach(p=>{
+      html += `<p>📅 ${p.date} — <b>${p.value}%</b> : ${p.note}</p>`;
+    });
+  }
+
+  html += `<button class="close-btn" onclick="closePopup()">إغلاق</button>`;
+
+  document.getElementById("popupContent").innerHTML = html;
+  document.getElementById("popup").style.display = "flex";
+}
+
+function closePopup(){
+  document.getElementById("popup").style.display = "none";
+}
+
+function logout(){
+  window.location.href = "index.html";
+}
 </script>
 
 </body>
