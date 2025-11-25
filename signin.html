@@ -5,25 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تسجيل دخول المترشح - Auto École Ben Cheikh</title>
 <style>
-body { font-family: Arial; direction: rtl; background: linear-gradient(135deg, #74ABE2, #5563DE); color: #fff; margin:0; padding:0; }
-header { text-align:center; padding:40px 20px; }
-header h1 { font-size:36px; margin:0; }
-section { background: rgba(255,255,255,0.1); max-width:500px; margin:auto; padding:30px; border-radius:12px; }
-input, button { padding:12px; font-size:16px; border-radius:6px; border:none; }
-input { border:1px solid #fff; background:rgba(255,255,255,0.2); color:#fff; }
+body {
+    font-family: Arial; direction: rtl;
+    background: linear-gradient(135deg, #74ABE2, #5563DE);
+    color: #fff; margin:0; padding:0; height:100vh;
+    display: flex; justify-content: center; align-items: center;
+}
+section {
+    background: rgba(255,255,255,0.1); max-width:500px;
+    margin:auto; padding:30px; border-radius:12px;
+}
+input, button {
+    padding:12px; font-size:16px; border-radius:6px; border:none;
+}
+input {
+    border:1px solid #fff; background:rgba(255,255,255,0.2); color:#fff;
+}
 input::placeholder { color:#eee; }
-button { background:#004aad; color:white; cursor:pointer; transition:0.3s; }
+button {
+    background:#004aad; color:white; cursor:pointer; transition:0.3s;
+}
 button:hover { background:#003080; }
-.dashboard { margin-top:20px; background: rgba(255,255,255,0.2); padding:15px; border-radius:8px; }
+.dashboard {
+    margin-top:20px; background: rgba(255,255,255,0.2);
+    padding:15px; border-radius:8px;
+}
 ul { padding-left:20px; }
 </style>
 </head>
 <body>
-
-<header>
-  <h1>تسجيل دخول المترشح</h1>
-  <p>أدخل الاسم ورقم الهاتف لمتابعة الدروس والتقدم</p>
-</header>
 
 <section>
   <h2>تسجيل الدخول</h2>
@@ -49,20 +59,13 @@ let currentCandidate = null;
 
 // دالة آمنة لتحويل JSON
 function safeJSON(data){
-  if(!data || data === "" || data === " "){
-    return [];
-  }
-  try{
-    return JSON.parse(data);
-  }catch(e){
-    console.warn("JSON Parse Failed:", data);
-    return [];
-  }
+  if(!data || data === "" || data === " ") return [];
+  try { return JSON.parse(data); } 
+  catch(e){ console.warn("JSON Parse Failed:", data); return []; }
 }
 
 // تحديث لوحة المترشح
 function updateCandidateDashboard(candidate){
-
   document.getElementById('candidateName').textContent = candidate.name;
   document.getElementById('candidateLicense').textContent = candidate.license;
 
@@ -81,27 +84,24 @@ function updateCandidateDashboard(candidate){
     : "<li>لا يوجد تقدم مسجل بعد</li>";
 }
 
-// تسجيل الدخول (مُصلّح 100%)
+// تسجيل الدخول
 document.getElementById('signinForm').addEventListener('submit', async function(e){
   e.preventDefault();
   
   const name = document.getElementById('name').value.trim();
   let phone = document.getElementById('phone').value.trim();
-
   if(!phone.startsWith("0")) phone = "0"+phone;
 
-  // ⚡ Normalize
-  const normalizedName = name.toLowerCase().trim();
-  const normalizedPhone = phone.trim().replace(/\s+/g, "");
+  const normalizedName = name.toLowerCase().replace(/\s+/g, "");
+  const normalizedPhone = phone.replace(/\s+/g, "");
 
   try{
     const res = await fetch(SHEETDB_API);
     const allCandidates = await res.json();
 
-    // ⚡ Matching flexible
     const candidate = allCandidates.find(c => {
-      const cName = (c.name || "").toLowerCase().trim();
-      const cPhone = String(c.phone || "").trim().replace(/\s+/g, "");
+      const cName = (c.name || "").toLowerCase().replace(/\s+/g,"");
+      const cPhone = String(c.phone || "").replace(/\s+/g,"");
       return cName === normalizedName && cPhone === normalizedPhone;
     });
 
@@ -133,18 +133,13 @@ setInterval(async ()=>{
     const allCandidates = await res.json();
 
     const candidate = allCandidates.find(c => Number(c.id) === Number(currentCandidate.id));
-
     if(candidate){
       candidate.lessons = safeJSON(candidate.lessons);
       candidate.progress = safeJSON(candidate.progress);
       updateCandidateDashboard(candidate);
     }
-
-  }catch(e){
-    console.error(e);
-  }
+  }catch(e){ console.error(e); }
 },5000);
-
 </script>
 
 </body>
