@@ -5,38 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تسجيل دخول المترشح - Auto École Ben Cheikh</title>
 <style>
-body {
-    font-family: Arial; direction: rtl;
-    background: linear-gradient(135deg, #74ABE2, #5563DE);
-    color: #fff; margin:0; padding:0; height:100vh;
-    display: flex; justify-content: center; align-items: center;
-}
-section {
-    background: rgba(255,255,255,0.1); max-width:500px;
-    margin:auto; padding:30px; border-radius:12px;
-}
-input, button {
-    padding:12px; font-size:16px; border-radius:6px; border:none;
-}
-input {
-    border:1px solid #fff; background:rgba(255,255,255,0.2); color:#fff;
-}
+body { font-family: Arial; direction: rtl; background: linear-gradient(135deg, #74ABE2, #5563DE); color: #fff; margin:0; padding:0; }
+header { text-align:center; padding:40px 20px; }
+header h1 { font-size:36px; margin:0; }
+section { background: rgba(255,255,255,0.1); max-width:500px; margin:auto; padding:30px; border-radius:12px; }
+input, button { padding:12px; font-size:16px; border-radius:6px; border:none; width:100%; margin-bottom:10px; }
+input { border:1px solid #fff; background:rgba(255,255,255,0.2); color:#fff; }
 input::placeholder { color:#eee; }
-button {
-    background:#004aad; color:white; cursor:pointer; transition:0.3s;
-}
+button { background:#004aad; color:white; cursor:pointer; transition:0.3s; }
 button:hover { background:#003080; }
-.dashboard {
-    margin-top:20px; background: rgba(255,255,255,0.2);
-    padding:15px; border-radius:8px;
-}
+.dashboard { margin-top:20px; background: rgba(255,255,255,0.2); padding:15px; border-radius:8px; }
 ul { padding-left:20px; }
+.error { color: #ffdddd; background: #aa0000; padding:8px; border-radius:5px; margin-bottom:10px; display:none; }
 </style>
 </head>
 <body>
 
+<header>
+  <h1>تسجيل دخول المترشح</h1>
+  <p>أدخل الاسم ورقم الهاتف لمتابعة الدروس والتقدم</p>
+</header>
+
 <section>
-  <h2>تسجيل الدخول</h2>
+  <div id="errorMsg" class="error"></div>
   <form id="signinForm">
     <input type="text" id="name" placeholder="الاسم الكامل" required>
     <input type="tel" id="phone" placeholder="رقم الهاتف (06xxxxxxx)" required>
@@ -46,9 +37,9 @@ ul { padding-left:20px; }
   <div class="dashboard" id="dashboard" style="display:none;">
     <h3>مرحباً، <span id="candidateName"></span></h3>
     <p>نوع الرخصة: <span id="candidateLicense"></span></p>
-    <h4>الدروس:</h4>
+    <h4>📘 الدروس:</h4>
     <ul id="lessonsList"></ul>
-    <h4>التقدم:</h4>
+    <h4>📊 التقدم:</h4>
     <ul id="progressList"></ul>
   </div>
 </section>
@@ -88,25 +79,31 @@ function updateCandidateDashboard(candidate){
 document.getElementById('signinForm').addEventListener('submit', async function(e){
   e.preventDefault();
   
-  const name = document.getElementById('name').value.trim();
-  let phone = document.getElementById('phone').value.trim();
-  if(!phone.startsWith("0")) phone = "0"+phone;
+  const nameInput = document.getElementById('name').value.trim().toLowerCase().replace(/\s+/g,"");
+  let phoneInput = document.getElementById('phone').value.trim().replace(/\D/g,""); // إزالة أي أحرف غير الأرقام
+  if(phoneInput.startsWith("0")) phoneInput = phoneInput.slice(1); // normalize بدون صفر
 
-  const normalizedName = name.toLowerCase().replace(/\s+/g, "");
-  const normalizedPhone = phone.replace(/\s+/g, "");
+  const errorDiv = document.getElementById('errorMsg');
+  errorDiv.style.display = "none";
 
   try{
     const res = await fetch(SHEETDB_API);
     const allCandidates = await res.json();
 
+    // البحث المرن
     const candidate = allCandidates.find(c => {
       const cName = (c.name || "").toLowerCase().replace(/\s+/g,"");
-      const cPhone = String(c.phone || "").replace(/\s+/g,"");
-      return cName === normalizedName && cPhone === normalizedPhone;
+      let cPhone = String(c.phone || "").replace(/\D/g,"");
+      if(cPhone.startsWith("0")) cPhone = cPhone.slice(1);
+
+      const nameMatch = cName === nameInput;
+      const phoneMatch = cPhone.slice(-9) === phoneInput.slice(-9); // آخر 9 أرقام فقط
+      return nameMatch && phoneMatch;
     });
 
     if(!candidate){
-      alert("المترشح غير موجود! تأكد من الاسم ورقم الهاتف.");
+      errorDiv.innerText = "المترشح غير موجود! تأكد من الاسم ورقم الهاتف.";
+      errorDiv.style.display = "block";
       return;
     }
 
@@ -121,17 +118,17 @@ document.getElementById('signinForm').addEventListener('submit', async function(
 
   }catch(e){
     console.error("خطأ ف جلب البيانات", e);
-    alert("حدث خطأ أثناء جلب البيانات. حاول لاحقاً.");
+    errorDiv.innerText = "حدث خطأ أثناء جلب البيانات. حاول لاحقاً.";
+    errorDiv.style.display = "block";
   }
 });
 
-// متابعة التحديثات كل 5 ثواني
+// تحديث البيانات كل 5 ثواني
 setInterval(async ()=>{
   if(!currentCandidate) return;
   try{
     const res = await fetch(SHEETDB_API);
     const allCandidates = await res.json();
-
     const candidate = allCandidates.find(c => Number(c.id) === Number(currentCandidate.id));
     if(candidate){
       candidate.lessons = safeJSON(candidate.lessons);
