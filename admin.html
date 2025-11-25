@@ -4,8 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة التحكم Admin - Auto École Ben Cheikh</title>
+
 <style>
-body { font-family: Arial; direction: rtl; background: #f0f2f5; color: #333; margin:0; padding:0; }
+body { font-family: Arial; direction: rtl; background: #f0f2f5; color:#333; margin:0; padding:0; }
 header { background:#004aad; color:white; padding:30px 20px; text-align:center; }
 header h1 { margin:0; font-size:36px; }
 nav { text-align:center; margin:20px 0; }
@@ -15,14 +16,15 @@ section { padding:20px; max-width:900px; margin:auto; background:white; border-r
 h2 { text-align:center; color:#004aad; }
 form, .edit-form { display:flex; flex-direction:column; gap:12px; margin-top:20px; }
 input, select, button { padding:10px; font-size:16px; border-radius:6px; border:1px solid #ccc; }
-button { background:#004aad; color:white; border:none; cursor:pointer; transition:0.3s; }
+button { background:#004aad; color:white; cursor:pointer; border:none; transition:0.3s; }
 button:hover { background:#003080; }
 table { width:100%; border-collapse: collapse; margin-top:15px; }
 th, td { border:1px solid #ccc; padding:10px; text-align:center; }
-.edit-form { display:none; margin-top:20px; background:#eef1f5; padding:15px; border-radius:8px; }
+.edit-form { display:none; background:#eef1f5; padding:15px; border-radius:8px; margin-top:20px; }
 label { font-weight:bold; }
 </style>
 </head>
+
 <body>
 
 <header>
@@ -30,10 +32,13 @@ label { font-weight:bold; }
   <p>إدارة المترشحين والدروس</p>
 </header>
 
-<nav><a href="index.html">الصفحة الرئيسية</a></nav>
+<nav>
+  <a href="index.html">الصفحة الرئيسية</a>
+</nav>
 
 <section>
   <h2>إضافة مترشح جديد</h2>
+
   <form id="candidateForm">
     <input type="text" id="name" placeholder="الاسم الكامل" required>
     <input type="number" id="age" placeholder="العمر" required>
@@ -46,175 +51,175 @@ label { font-weight:bold; }
     <button type="submit">أضف المترشح</button>
   </form>
 
-  <div class="dashboard" id="candidatesList">
+  <div id="candidatesList">
     <p>لا يوجد مترشحين بعد.</p>
   </div>
 
   <div class="edit-form" id="editForm">
-    <h3>إضافة / تعديل درس وتقدم</h3>
+    <h3>إضافة / تعديل درس و تقدم</h3>
 
-    <label for="lessonDate">التاريخ:</label>
+    <label>التاريخ:</label>
     <input type="date" id="lessonDate">
 
-    <label for="lessonTitle">عنوان الدرس:</label>
-    <input type="text" id="lessonTitle" placeholder="اكتب عنوان الدرس هنا">
+    <label>عنوان الدرس:</label>
+    <input type="text" id="lessonTitle">
 
-    <label for="lessonNote">ملاحظة عن الدرس:</label>
-    <input type="text" id="lessonNote" placeholder="يمكنك إضافة ملاحظة">
+    <label>ملاحظة عن الدرس:</label>
+    <input type="text" id="lessonNote">
 
-    <label for="progressValue">التقدم (%):</label>
-    <input type="number" id="progressValue" placeholder="مثال: 50" min="0" max="100">
+    <label>التقدم (%):</label>
+    <input type="number" id="progressValue" min="0" max="100">
 
-    <label for="progressNote">ملاحظة عن التقدم:</label>
-    <input type="text" id="progressNote" placeholder="يمكنك إضافة ملاحظة">
+    <label>ملاحظة عن التقدم:</label>
+    <input type="text" id="progressNote">
 
     <button id="addLessonProgress">إضافة / تحديث</button>
-    <button id="cancelEdit" style="background-color:#ccc; color:#333;">إلغاء</button>
+    <button id="cancelEdit" style="background:#bbb; color:#000;">إلغاء</button>
   </div>
 </section>
 
 <script>
-const SHEETDB_API = "https://sheetdb.io/api/v1/o1glqkhxgb58a";
+const SHEETDB = "https://sheetdb.io/api/v1/o1glqkhxgb58a";
+
 let candidates = [];
-let currentEditId = null;
+let currentId = null;
 
-// جلب البيانات من Google Sheets
-async function fetchCandidates(){
-  try{
-    const res = await fetch(SHEETDB_API);
-    candidates = await res.json();
-    // تحويل الدروس والتقدم من نص JSON إذا كانوا موجودين
-    candidates = candidates.map(c => ({
-      ...c,
-      lessons: c.lessons ? JSON.parse(c.lessons) : [],
-      progress: c.progress ? JSON.parse(c.progress) : []
-    }));
-    updateDashboard();
-  }catch(e){ console.error("خطأ ف جلب البيانات", e); }
+// جلب البيانات
+async function loadData(){
+  const r = await fetch(SHEETDB);
+  let data = await r.json();
+
+  candidates = data.map(c => ({
+    ...c,
+    id: Number(c.id),
+    lessons: c.lessons ? JSON.parse(c.lessons) : [],
+    progress: c.progress ? JSON.parse(c.progress) : []
+  }));
+
+  renderTable();
 }
+loadData();
 
-// إضافة مترشح جديد
-document.getElementById('candidateForm').addEventListener('submit', async function(e){
+// إضافة مترشح
+document.getElementById("candidateForm").addEventListener("submit", async (e)=>{
   e.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  const phoneInput = document.getElementById('phone').value.trim();
-  const phone = phoneInput.startsWith("0") ? phoneInput : "0"+phoneInput;
-  const age = document.getElementById('age').value;
-  const license = document.getElementById('license').value;
 
-  if(candidates.some(c => c.name === name && c.phone === phone)){
-    alert("هذا المترشح مسجل بالفعل!");
-    return;
-  }
+  let name = document.getElementById("name").value.trim();
+  let age = document.getElementById("age").value;
+  let phone = document.getElementById("phone").value.trim();
+  let license = document.getElementById("license").value;
 
-  const newCandidate = { name, age, phone, license, lessons: [], progress: [], id: Date.now() };
+  if(!phone.startsWith("0")) phone = "0" + phone;
 
-  try{
-    await fetch(SHEETDB_API, {
-      method: "POST",
-      headers:{ "Content-Type": "application/json" },
-      body: JSON.stringify({ data: newCandidate })
-    });
-    alert("تم إضافة المترشح بنجاح!");
-    fetchCandidates();
-    document.getElementById('candidateForm').reset();
-  }catch(e){ console.error("خطأ ف إضافة المترشح", e); }
-});
+  const newUser = {
+    id: Date.now(),
+    name,
+    age,
+    phone,
+    license,
+    lessons: "[]",
+    progress: "[]"
+  };
 
-// تحديث لوحة المترشحين
-function updateDashboard() {
-  const candidatesList = document.getElementById('candidatesList');
-  if(candidates.length === 0){
-    candidatesList.innerHTML = "<p>لا يوجد مترشحين بعد.</p>";
-    return;
-  }
-  let html = "<table><tr><th>الرقم</th><th>الاسم</th><th>العمر</th><th>الهاتف</th><th>الرخصة</th><th>تعديل</th><th>حذف</th></tr>";
-  candidates.forEach((c,index)=>{
-    html += `<tr>
-      <td>${index+1}</td>
-      <td>${c.name}</td>
-      <td>${c.age}</td>
-      <td>${c.phone}</td>
-      <td>${c.license}</td>
-      <td><button onclick="editCandidate(${c.id})">Edit</button></td>
-      <td><button onclick="deleteCandidate(${c.id})" style="background:#c00;">حذف</button></td>
-    </tr>`;
+  await fetch(SHEETDB,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ data:newUser })
   });
+
+  alert("تمت الإضافة بنجاح!");
+  loadData();
+  e.target.reset();
+});
+
+// رسم الجدول
+function renderTable(){
+  const div = document.getElementById("candidatesList");
+
+  if(candidates.length === 0){
+    div.innerHTML = "<p>لا يوجد مترشحين.</p>";
+    return;
+  }
+
+  let html = `
+    <table>
+      <tr>
+        <th>#</th><th>الاسم</th><th>العمر</th><th>الهاتف</th>
+        <th>الرخصة</th><th>تعديل</th><th>حذف</th>
+      </tr>
+  `;
+
+  candidates.forEach((c,i)=>{
+    html += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${c.name}</td>
+        <td>${c.age}</td>
+        <td>${c.phone}</td>
+        <td>${c.license}</td>
+        <td><button onclick="startEdit(${c.id})">Edit</button></td>
+        <td><button style="background:#c00" onclick="removeUser(${c.id})">حذف</button></td>
+      </tr>
+    `;
+  });
+
   html += "</table>";
-  candidatesList.innerHTML = html;
+  div.innerHTML = html;
 }
 
-// فتح خانة التعديل
-function editCandidate(id){
-  currentEditId = id;
-  const candidate = candidates.find(c => Number(c.id) === Number(id));
-  if(!candidate) return;
-  document.getElementById('lessonDate').value = '';
-  document.getElementById('lessonTitle').value = '';
-  document.getElementById('lessonNote').value = '';
-  document.getElementById('progressValue').value = '';
-  document.getElementById('progressNote').value = '';
-  document.getElementById('editForm').style.display = 'block';
+// فتح التعديل
+function startEdit(id){
+  currentId = id;
+  document.getElementById("editForm").style.display = "block";
 }
 
-// إضافة/تحديث الدروس والتقدم
-document.getElementById('addLessonProgress').addEventListener('click', async function(){
-  const candidate = candidates.find(c => Number(c.id) === Number(currentEditId));
-  if(!candidate) return alert("لم يتم اختيار مترشح");
+// إضافة درس أو تقدم
+document.getElementById("addLessonProgress").onclick = async ()=>{
 
-  const lessonDate = document.getElementById('lessonDate').value || new Date().toISOString().slice(0,10);
-  const lessonTitle = document.getElementById('lessonTitle').value.trim();
-  const lessonNote = document.getElementById('lessonNote').value.trim();
-  if(lessonTitle){
-    candidate.lessons.push({ title: lessonTitle, note: lessonNote, date: lessonDate });
-  }
+  let c = candidates.find(u => u.id === currentId);
+  if(!c) return alert("خطأ!");
 
-  const progressValue = document.getElementById('progressValue').value;
-  const progressNote = document.getElementById('progressNote').value.trim();
-  if(progressValue){
-    candidate.progress.push({ value: progressValue, note: progressNote, date: lessonDate });
-  }
+  const date = document.getElementById("lessonDate").value || new Date().toISOString().slice(0,10);
 
-  try{
-    // تحويل الدروس والتقدم لـ JSON قبل الإرسال
-    const dataToUpdate = {
-      ...candidate,
-      lessons: JSON.stringify(candidate.lessons),
-      progress: JSON.stringify(candidate.progress)
-    };
+  const title = document.getElementById("lessonTitle").value.trim();
+  const note  = document.getElementById("lessonNote").value.trim();
+  if(title) c.lessons.push({ title, note, date });
 
-    await fetch(`${SHEETDB_API}/id/${candidate.id}`,{
-      method:"PUT",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ data: dataToUpdate })
-    });
+  const pv = document.getElementById("progressValue").value;
+  const pn = document.getElementById("progressNote").value.trim();
+  if(pv) c.progress.push({ value:pv, note:pn, date });
 
-    alert("تم تحديث الدروس والتقدم بنجاح!");
-    fetchCandidates();
-    document.getElementById('editForm').style.display = 'none';
-  }catch(e){ console.error("خطأ ف تحديث الدروس", e); }
-});
+  await fetch(`${SHEETDB}/id/${c.id}`,{
+    method:"PUT",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      data:{
+        ...c,
+        lessons: JSON.stringify(c.lessons),
+        progress: JSON.stringify(c.progress)
+      }
+    })
+  });
 
-// حذف المترشح
-async function deleteCandidate(id){
-  if(!confirm("هل أنت متأكد من حذف هذا المترشح؟")) return;
-  try{
-    await fetch(`${SHEETDB_API}/id/${id}`,{ method:"DELETE" });
-    alert("تم الحذف بنجاح!");
-    fetchCandidates();
-  }catch(e){ console.error("خطأ ف الحذف", e); }
+  alert("تم التحديث!");
+  loadData();
+
+  document.getElementById("editForm").style.display = "none";
+};
+
+// حذف
+async function removeUser(id){
+  if(!confirm("هل تريد حذف هذا المترشح؟")) return;
+
+  await fetch(`${SHEETDB}/id/${id}`,{ method:"DELETE" });
+
+  alert("تم الحذف!");
+  loadData();
 }
 
-// admin login محلي
-if(localStorage.getItem("adminLogged") !== "yes"){
-    window.location.href = "admin-login.html";
-}
-
-document.getElementById('cancelEdit').addEventListener('click', function(){
-  document.getElementById('editForm').style.display = 'none';
-});
-
-fetchCandidates();
+document.getElementById("cancelEdit").onclick = ()=>{
+  document.getElementById("editForm").style.display = "none";
+};
 </script>
 
 </body>
