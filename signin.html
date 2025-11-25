@@ -48,9 +48,9 @@ ul { padding-left:20px; }
 const SHEETDB_API = "https://sheetdb.io/api/v1/o1glqkhxgb58a";
 let currentCandidate = null;
 
-// دالة آمنة لتحويل JSON
+// دالة لتحويل JSON safely
 function safeJSON(data){
-  if(!data || data === "" || data === " ") return [];
+  if(!data || data.trim() === "") return [];
   try { return JSON.parse(data); } 
   catch(e){ console.warn("JSON Parse Failed:", data); return []; }
 }
@@ -78,9 +78,9 @@ function updateCandidateDashboard(candidate){
 // تسجيل الدخول
 document.getElementById('signinForm').addEventListener('submit', async function(e){
   e.preventDefault();
-  
+
   const nameInput = document.getElementById('name').value.trim().toLowerCase().replace(/\s+/g,"");
-  let phoneInput = document.getElementById('phone').value.trim().replace(/\D/g,""); // إزالة أي أحرف غير الأرقام
+  let phoneInput = document.getElementById('phone').value.trim().replace(/\D/g,"");
   if(phoneInput.startsWith("0")) phoneInput = phoneInput.slice(1); // normalize بدون صفر
 
   const errorDiv = document.getElementById('errorMsg');
@@ -90,15 +90,11 @@ document.getElementById('signinForm').addEventListener('submit', async function(
     const res = await fetch(SHEETDB_API);
     const allCandidates = await res.json();
 
-    // البحث المرن
     const candidate = allCandidates.find(c => {
       const cName = (c.name || "").toLowerCase().replace(/\s+/g,"");
       let cPhone = String(c.phone || "").replace(/\D/g,"");
       if(cPhone.startsWith("0")) cPhone = cPhone.slice(1);
-
-      const nameMatch = cName === nameInput;
-      const phoneMatch = cPhone.slice(-9) === phoneInput.slice(-9); // آخر 9 أرقام فقط
-      return nameMatch && phoneMatch;
+      return cName === nameInput && cPhone.slice(-9) === phoneInput.slice(-9); // آخر 9 أرقام فقط
     });
 
     if(!candidate){
@@ -123,7 +119,7 @@ document.getElementById('signinForm').addEventListener('submit', async function(
   }
 });
 
-// تحديث البيانات كل 5 ثواني
+// تحديث البيانات كل 5 ثواني تلقائياً
 setInterval(async ()=>{
   if(!currentCandidate) return;
   try{
