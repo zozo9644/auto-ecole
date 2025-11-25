@@ -81,18 +81,30 @@ function updateCandidateDashboard(candidate){
     : "<li>لا يوجد تقدم مسجل بعد</li>";
 }
 
-// تسجيل الدخول
+// تسجيل الدخول (مُصلّح 100%)
 document.getElementById('signinForm').addEventListener('submit', async function(e){
   e.preventDefault();
+  
   const name = document.getElementById('name').value.trim();
   let phone = document.getElementById('phone').value.trim();
+
   if(!phone.startsWith("0")) phone = "0"+phone;
+
+  // ⚡ Normalize
+  const normalizedName = name.toLowerCase().trim();
+  const normalizedPhone = phone.trim().replace(/\s+/g, "");
 
   try{
     const res = await fetch(SHEETDB_API);
     const allCandidates = await res.json();
 
-    const candidate = allCandidates.find(c => c.name === name && c.phone === phone);
+    // ⚡ Matching flexible
+    const candidate = allCandidates.find(c => {
+      const cName = (c.name || "").toLowerCase().trim();
+      const cPhone = String(c.phone || "").trim().replace(/\s+/g, "");
+      return cName === normalizedName && cPhone === normalizedPhone;
+    });
+
     if(!candidate){
       alert("المترشح غير موجود! تأكد من الاسم ورقم الهاتف.");
       return;
