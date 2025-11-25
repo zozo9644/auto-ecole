@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة التحكم Admin - Auto École Ben Cheikh</title>
+
+<!-- حماية الصفحة -->
 <script>
 if (localStorage.getItem("admin_logged") !== "yes") {
     window.location.href = "admin-login.html";
@@ -11,44 +13,188 @@ if (localStorage.getItem("admin_logged") !== "yes") {
 </script>
 
 <style>
-body { font-family: Arial; direction: rtl; background: #f0f2f5; color:#333; margin:0; padding:0; }
-header { background:#004aad; color:white; padding:30px 20px; text-align:center; }
-header h1 { margin:0; font-size:36px; }
-nav { text-align:center; margin:20px 0; }
-nav a, nav button { margin:0 10px; text-decoration:none; color:#004aad; font-weight:bold; padding:10px 20px; border:2px solid #004aad; border-radius:8px; transition:0.3s; background:white; cursor:pointer; }
-nav a:hover, nav button:hover { background:#004aad; color:white; }
+/* ====== GENERAL ====== */
+body {
+    font-family: "Cairo", Arial, sans-serif;
+    direction: rtl;
+    background: #eef2f7;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
 
-section { padding:20px; max-width:900px; margin:auto; background:white; border-radius:10px; box-shadow:0 6px 10px rgba(0,0,0,0.1); }
-h2 { text-align:center; color:#004aad; }
-form, .edit-form { display:flex; flex-direction:column; gap:12px; margin-top:20px; }
-input, select, button { padding:10px; font-size:16px; border-radius:6px; border:1px solid #ccc; }
-button { background:#004aad; color:white; cursor:pointer; border:none; transition:0.3s; }
-button:hover { background:#003080; }
-table { width:100%; border-collapse: collapse; margin-top:15px; }
-th, td { border:1px solid #ccc; padding:10px; text-align:center; }
-.edit-form { display:none; background:#eef1f5; padding:15px; border-radius:8px; margin-top:20px; }
-label { font-weight:bold; }
+header {
+    background: linear-gradient(135deg, #0056d6, #003b9e);
+    color: white;
+    padding: 35px 20px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+header h1 {
+    margin: 0;
+    font-size: 34px;
+}
+header p {
+    margin: 5px 0 0;
+    font-size: 18px;
+    opacity: 0.9;
+}
 
-/* Popup */
+/* ====== NAVIGATION ====== */
+nav {
+    text-align: center;
+    margin: 18px 0;
+}
+nav a, nav button {
+    margin: 0 8px;
+    text-decoration: none;
+    color: #004aad;
+    font-weight: bold;
+    padding: 10px 22px;
+    border: 2px solid #004aad;
+    border-radius: 10px;
+    transition: 0.3s;
+    background: white;
+    cursor: pointer;
+    font-size: 16px;
+}
+nav a:hover, nav button:hover {
+    background: #004aad;
+    color: white;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+/* ====== MAIN BOX ====== */
+section {
+    padding: 25px;
+    max-width: 950px;
+    margin: auto;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+h2 {
+    text-align: center;
+    color: #004aad;
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+/* ====== FORMS ====== */
+form, .edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 20px;
+}
+
+input, select, button {
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #c9c9c9;
+}
+input:focus, select:focus {
+    outline: none;
+    border-color: #004aad;
+    box-shadow: 0 0 5px rgba(0,74,173,0.4);
+}
+button {
+    background: #004aad;
+    color: white;
+    cursor: pointer;
+    border: none;
+    transition: 0.3s;
+    font-size: 17px;
+}
+button:hover {
+    background: #003080;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+/* ====== TABLE ====== */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 18px;
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+}
+th {
+    background: #004aad;
+    color: white;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    font-size: 15px;
+}
+
+/* ====== EDIT BOX ====== */
+.edit-form {
+    display: none;
+    background: #f4f7fb;
+    padding: 18px;
+    border-radius: 12px;
+    margin-top: 25px;
+    border: 1px solid #cfd7e3;
+}
+.edit-form h3 {
+    margin: 0 0 10px;
+    color: #004aad;
+}
+
+/* ====== POPUP ====== */
 .popup {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6);
-  display: none;
-  justify-content: center; align-items: center;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px);
 }
 .popup-content {
-  background: white; color:#000;
-  padding: 20px;
-  width: 90%; max-width: 500px;
-  border-radius: 10px;
-  max-height: 80%;
-  overflow-y: auto;
+    background: white;
+    color: #000;
+    padding: 25px;
+    width: 90%;
+    max-width: 530px;
+    border-radius: 14px;
+    max-height: 80%;
+    overflow-y: auto;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.25);
 }
-.popup-content h3 { margin-top:0; color:#004aad; }
+.popup-content h3 {
+    margin-top: 0;
+    color: #004aad;
+    font-size: 24px;
+    text-align: center;
+}
 .close-btn {
-  background:#c00; color:white; padding:10px 20px; border:none;
-  margin-top:15px; }
+    background: #cc0000;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    font-size: 17px;
+    margin-top: 20px;
+}
+.close-btn:hover {
+    background: #990000;
+}
+
+/* ====== FOOTER ====== */
+footer {
+    text-align: center;
+    padding: 18px;
+    margin-top: 25px;
+    color: #555;
+    font-size: 14px;
+}
 </style>
 </head>
 
@@ -106,17 +252,26 @@ label { font-weight:bold; }
   </div>
 </section>
 
-<!-- POPUP لعرض الدروس و التقدم -->
+<!-- POPUP -->
 <div class="popup" id="popup">
-  <div class="popup-content" id="popupContent">
-  </div>
+  <div class="popup-content" id="popupContent"></div>
 </div>
 
+<footer>
+  © 2025 Auto École Ben Cheikh - جميع الحقوق محفوظة
+</footer>
+
 <script>
+/* === BACKEND LOGIC AS IS === */
 const SHEETDB = "https://sheetdb.io/api/v1/o1glqkhxgb58a";
 
 let candidates = [];
 let currentId = null;
+
+function logout() {
+    localStorage.removeItem("admin_logged");
+    window.location.href = "admin-login.html";
+}
 
 async function loadData(){
   const r = await fetch(SHEETDB);
@@ -253,10 +408,10 @@ function showDetails(id){
 
   html += "<h4>📘 الدروس:</h4>";
   if(user.lessons.length === 0){
-    html += "<p>لا يوجد دروس.</p>";
+    html += "<p>لا توجد دروس بعد.</p>";
   } else {
     user.lessons.forEach(l=>{
-      html += `<p>📅 ${l.date} — <b>${l.title}</b> : ${l.note}</p>`;
+      html += `<div><b>${l.date}</b> - ${l.title} <br> <small>${l.note}</small></div><hr>`;
     });
   }
 
@@ -265,7 +420,7 @@ function showDetails(id){
     html += "<p>لا يوجد تقدم بعد.</p>";
   } else {
     user.progress.forEach(p=>{
-      html += `<p>📅 ${p.date} — <b>${p.value}%</b> : ${p.note}</p>`;
+      html += `<div><b>${p.date}</b> - ${p.value}% <br> <small>${p.note}</small></div><hr>`;
     });
   }
 
@@ -277,10 +432,6 @@ function showDetails(id){
 
 function closePopup(){
   document.getElementById("popup").style.display = "none";
-}
-
-function logout(){
-  window.location.href = "index.html";
 }
 </script>
 
