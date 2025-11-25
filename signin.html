@@ -14,7 +14,9 @@ input { border:1px solid #fff; background:rgba(255,255,255,0.2); color:#fff; }
 input::placeholder { color:#eee; }
 button { background:#004aad; color:white; cursor:pointer; transition:0.3s; }
 button:hover { background:#003080; }
-.dashboard { margin-top:20px; background: rgba(255,255,255,0.2); padding:15px; border-radius:8px; text-align:center; }
+.dashboard { margin-top:20px; background: rgba(255,255,255,0.2); padding:20px; border-radius:8px; text-align:center; }
+.option-btn { display:block; width:80%; margin:10px auto; padding:12px; font-size:18px; background:#0080ff; border-radius:6px; cursor:pointer; transition:0.3s; }
+.option-btn:hover { background:#005bb5; }
 .error { color: #ffdddd; background: #aa0000; padding:8px; border-radius:5px; margin-bottom:10px; display:none; }
 </style>
 </head>
@@ -36,6 +38,10 @@ button:hover { background:#003080; }
   <div class="dashboard" id="dashboard" style="display:none;">
     <h3>مرحباً، <span id="candidateName"></span></h3>
     <p>نوع الرخصة: <span id="candidateLicense"></span></p>
+
+    <button class="option-btn" id="theoreticalBtn">الدروس النظرية</button>
+    <button class="option-btn" id="practicalBtn">الدروس التطبيقية</button>
+    <button class="option-btn" id="progressBtn">التقدم</button>
   </div>
 </section>
 
@@ -79,7 +85,24 @@ document.getElementById('signinForm').addEventListener('submit', async function(
     document.getElementById('candidateName').textContent = currentCandidate.name;
     document.getElementById('candidateLicense').textContent = currentCandidate.license;
 
- 
+  }catch(e){
+    console.error("خطأ ف جلب البيانات", e);
+    errorDiv.innerText = "حدث خطأ أثناء جلب البيانات. حاول لاحقاً.";
+    errorDiv.style.display = "block";
+  }
+});
+
+// إعادة التوجيه عند الضغط على كل زر
+document.getElementById('theoreticalBtn').addEventListener('click', () => {
+  window.location.href = "theoretical.html"; // ضع رابط صفحة الدروس النظرية
+});
+
+document.getElementById('practicalBtn').addEventListener('click', () => {
+  window.location.href = "practical.html"; // ضع رابط صفحة الدروس التطبيقية
+});
+
+document.getElementById('progressBtn').addEventListener('click', () => {
+  window.location.href = "progress.html"; // ضع رابط صفحة التقدم
 });
 </script>
 
